@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+  # ─── Production ───────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    image: xental-frontend:latest
+    container_name: xental-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    networks:
+      - xental-network
+
+  # ─── Development (hot-reload via bind mount) ───────────────
+  app-dev:
+    image: node:22-alpine
+    container_name: xental-frontend-dev
+    working_dir: /app
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=development
+    command: sh -c "corepack enable && pnpm install && pnpm dev"
+    networks:
+      - xental-network
+    profiles:
+      - dev
+
+networks:
+  xental-network:
+    driver: bridge

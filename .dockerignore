@@ -1,0 +1,35 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Next.js build output
+.next
+out
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Dev / editor files
+.vscode
+.idea
+*.log
+*.md
+README.md
+
+# OS
+.DS_Store
+Thumbs.db
+
+# CI
+.github
