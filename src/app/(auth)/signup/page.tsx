@@ -9,6 +9,8 @@ export const metadata: Metadata = {
     'Sign up for Xental and start automating payment collection with dedicated virtual accounts.',
 };
 
+type AuthStep = { step: number; label: string; active: boolean };
+
 const STEPS: AuthStep[] = [
   { step: 1, label: 'Sign up your account', active: true },
   { step: 2, label: 'Verify your business', active: false },
