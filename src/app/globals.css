@@ -1,26 +1,242 @@
-@import "tailwindcss";
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* ── Xental Brand: Named Semantic Tokens ───────────────────────── */
+  --color-xental-bg: #f8fafc;
+  --color-stroke-1: #e2e8f0;
+  --color-stroke-2: #ebebeb;
+
+  --color-action-blue: #1a56db;
+  --color-action-blue-surface: #ebf5ff;
+
+  --color-pending: #f5a623;
+  --color-pending-top: #a86908;
+
+  --color-success: #2ea83a;
+  --color-success-dark: #13661d;
+  --color-success-surface: #ecfdf3;
+  --color-success-pending: #a16303;
+  --color-success-pending-surface: #f5a623;
+
+  --color-failed: #9c1e1c;
+  --color-failed-surface: #fef0ef;
+
+  --color-status-pending-1: #c34b00;
+  --color-status-pending-1-surface: #f38744;
+  --color-status-exceptions: #5b22ea;
+  --color-status-exceptions-surface: #f4f3ff;
+  --color-status-reversed: #394b66;
+  --color-status-reversed-surface: #edf3fb;
+
+  /* ── Xental Blue (50–900) ─────────────────────────────────────── */
+  --color-xental-blue-50: #eff6ff;
+  --color-xental-blue-100: #dbeafe;
+  --color-xental-blue-200: #bfdbfe;
+  --color-xental-blue-300: #93c5fd;
+  --color-xental-blue-400: #60a5fa;
+  --color-xental-blue-500: #3b82f6;
+  --color-xental-blue-600: #2563eb;
+  --color-xental-blue-700: #1a56db;
+  --color-xental-blue-800: #1e40af;
+  --color-xental-blue-900: #1e3a8a;
+
+  /* ── Xental Secondary / Navy (50–900) ────────────────────────── */
+  --color-xental-secondary-50: #edf3fb;
+  --color-xental-secondary-100: #d6e5f5;
+  --color-xental-secondary-200: #b0c7e5;
+  --color-xental-secondary-300: #7da3cc;
+  --color-xental-secondary-400: #557faf;
+  --color-xental-secondary-500: #394b66;
+  --color-xental-secondary-600: #2d3b52;
+  --color-xental-secondary-700: #1e2a3d;
+  --color-xental-secondary-800: #121c2e;
+  --color-xental-secondary-900: #0a1020;
+
+  /* ── Xental Text Primary (400, 500, 900) ─────────────────────── */
+  --color-xental-text-primary-400: #94a3b8;
+  --color-xental-text-primary-500: #475569;
+  --color-xental-text-primary-900: #0d2b45;
+
+  /* ── Xental Text Secondary (50, 100, 200, 500) ───────────────── */
+  --color-xental-text-secondary-50: #f8fafc;
+  --color-xental-text-secondary-100: #f1f5f9;
+  --color-xental-text-secondary-200: #e2e8f0;
+  --color-xental-text-secondary-500: #64748b;
+
+  /* ── shadcn semantic tokens (unchanged) ──────────────────────── */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  /* ── Base ──────────────────────────────────────────────── */
+  --background: #f8fafc; /* Xental-BG              */
+  --foreground: #0d2b45; /* Text-Primary/900        */
+
+  /* ── Card & Popover ────────────────────────────────────── */
+  --card: #ffffff; /* White                  */
+  --card-foreground: #0d2b45; /* Text-Primary/900        */
+  --popover: #ffffff; /* White                  */
+  --popover-foreground: #0d2b45; /* Text-Primary/900        */
+
+  /* ── Primary  →  Action Blue ───────────────────────────── */
+  --primary: #1a56db; /* Action-blue            */
+  --primary-foreground: #ffffff; /* White                  */
+
+  /* ── Secondary  →  Xental Secondary surface ────────────── */
+  --secondary: #0f172a; /* Xental-Secondary    */
+  --secondary-foreground: #394b66; /* Xental-Secondary/500   */
+
+  /* ── Muted ─────────────────────────────────────────────── */
+  --muted: #4d5158; /* Xental-Secondary/100   */
+  --muted-foreground: #080c16; /* Text-Secondary/500     */
+
+  /* ── Accent  →  Action Blue surface ────────────────────── */
+  --accent: #ebf5ff; /* Action-blue-surface    */
+  --accent-foreground: #1a56db; /* Action-blue            */
+
+  /* ── Destructive  →  Failed ────────────────────────────── */
+  --destructive: #9c1e1c; /* Failed                 */
+
+  /* ── Borders & Inputs ──────────────────────────────────── */
+  --border: #ebebeb; /* Stroke-2               */
+  --input: #ebebeb; /* Stroke-2               */
+  --ring: #1a56db; /* Action-blue            */
+
+  /* ── Charts  →  brand palette ──────────────────────────── */
+  --chart-1: #1a56db; /* Action-blue            */
+  --chart-2: #2ea83a; /* Success                */
+  --chart-3: #f5a623; /* Pending                */
+  --chart-4: #5b22ea; /* Status-exceptions      */
+  --chart-5: #9c1e1c; /* Failed                 */
+
+  /* ── Radius (unchanged) ────────────────────────────────── */
+  --radius: 0.625rem;
+
+  /* ── Sidebar ───────────────────────────────────────────── */
+  --sidebar: #ffffff; /* White              */
+  --sidebar-foreground: #0d2b45; /* Text-Primary/900   */
+  --sidebar-primary: #1a56db; /* Action-blue        */
+  --sidebar-primary-foreground: #ffffff; /* White              */
+  --sidebar-accent: #ebf5ff; /* Action-blue-surface*/
+  --sidebar-accent-foreground: #1a56db; /* Action-blue        */
+  --sidebar-border: #e2e8f0; /* Stroke-1           */
+  --sidebar-ring: #1a56db; /* Action-blue        */
+}
+
+.dark {
+  /* ── Base ──────────────────────────────────────────────── */
+  --background: #0a1020; /* Xental-Secondary/900   */
+  --foreground: #edf3fb; /* Xental-Secondary/50    */
+
+  /* ── Card & Popover ────────────────────────────────────── */
+  --card: #121c2e; /* Xental-Secondary/800   */
+  --card-foreground: #edf3fb; /* Xental-Secondary/50    */
+  --popover: #121c2e; /* Xental-Secondary/800   */
+  --popover-foreground: #edf3fb; /* Xental-Secondary/50    */
+
+  /* ── Primary  →  lighter blue for dark mode ────────────── */
+  --primary: #3b82f6; /* Xental-Blue/500        */
+  --primary-foreground: #ffffff; /* White                  */
+
+  /* ── Secondary  →  dark navy surface ───────────────────── */
+  --secondary: #1e2a3d; /* Xental-Secondary/700   */
+  --secondary-foreground: #edf3fb; /* Xental-Secondary/50    */
+
+  /* ── Muted ─────────────────────────────────────────────── */
+  --muted: #1e2a3d; /* Xental-Secondary/700   */
+  --muted-foreground: #7da3cc; /* Xental-Secondary/300   */
+
+  /* ── Accent ─────────────────────────────────────────────── */
+  --accent: #1e2a3d; /* Xental-Secondary/700   */
+  --accent-foreground: #60a5fa; /* Xental-Blue/400        */
+
+  /* ── Destructive ───────────────────────────────────────── */
+  --destructive: #9c1e1c; /* Failed                 */
+
+  /* ── Borders & Inputs ──────────────────────────────────── */
+  --border: #1e2a3d; /* Xental-Secondary/700   */
+  --input: #2d3b52; /* Xental-Secondary/600   */
+  --ring: #3b82f6; /* Xental-Blue/500        */
+
+  /* ── Charts (same brand palette) ───────────────────────── */
+  --chart-1: #3b82f6; /* Xental-Blue/500        */
+  --chart-2: #2ea83a; /* Success                */
+  --chart-3: #f5a623; /* Pending                */
+  --chart-4: #5b22ea; /* Status-exceptions      */
+  --chart-5: #9c1e1c; /* Failed                 */
+
+  /* ── Sidebar ───────────────────────────────────────────── */
+  --sidebar: #121c2e; /* Xental-Secondary/800 */
+  --sidebar-foreground: #edf3fb; /* Xental-Secondary/50  */
+  --sidebar-primary: #3b82f6; /* Xental-Blue/500      */
+  --sidebar-primary-foreground: #ffffff; /* White                */
+  --sidebar-accent: #1e2a3d; /* Xental-Secondary/700 */
+  --sidebar-accent-foreground: #60a5fa; /* Xental-Blue/400      */
+  --sidebar-border: #1e2a3d; /* Xental-Secondary/700 */
+  --sidebar-ring: #3b82f6; /* Xental-Blue/500      */
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Custom Utility Classes */
+.container {
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  max-width: 1352px;
+  padding: 0 1rem;
 }
