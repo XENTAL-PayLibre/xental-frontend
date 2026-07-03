@@ -37,7 +37,22 @@ export default function Provider({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       {children}
-      <Toaster richColors position='top-right' />
+      <Toaster 
+        richColors 
+        position="top-right" 
+        toastOptions={{
+          unstyled: false, // Keeps the layout structure intact
+          classNames: {
+            // Custom background & text colors for different states using globals.css variables
+            success: 'bg-success-surface text-success-dark border border-success/30',
+            error: 'bg-failed-surface text-failed border border-failed/30',
+            info: 'bg-action-blue-surface text-action-blue border border-action-blue/30',
+            warning: 'bg-pending/15 text-pending-top border border-pending/30',
+            // Standard fallback toast configuration
+            toast: 'bg-white dark:bg-[#1a1a1a] text-black dark:text-white',
+          },
+        }}
+      />
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );
