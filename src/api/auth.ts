@@ -1,10 +1,10 @@
 'use client';
 
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { postRequest, resetAuthRefreshState } from '@/lib/http';
-import { markSession } from '@/lib/get-token';
+import { markSession, clearAuthCookies } from '@/lib/get-token';
 import { API_ENDPOINTS } from './api-endpoints';
 import type { RegisterPayload, RegisterResponse, LoginPayload, LoginResponse } from './types/auth';
 
@@ -96,6 +96,25 @@ export function useLogin() {
         401: 'Invalid email or password.',
         403: 'Email not verified. Please check your inbox.',
       });
+    },
+  });
+}
+
+// ── useLogout ──────────────────────────────────────────────────────────────
+export function useLogout() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationKey: ['auth', 'logout'],
+    // Best-effort server logout: revokes the refresh token and clears the HttpOnly
+    // xnt_access / xnt_refresh cookies. We clear the local sentinel + redirect regardless,
+    // so a failed network call can never trap the user in a session.
+    mutationFn: () =>
+      postRequest<void, Record<string, never>>({ url: API_ENDPOINTS.AUTH.LOGOUT, payload: {} }),
+    onSettled() {
+      clearAuthCookies();
+      qc.clear();
+      if (typeof window !== 'undefined') window.location.replace('/login');
     },
   });
 }

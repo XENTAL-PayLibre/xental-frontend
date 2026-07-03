@@ -10,8 +10,10 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   Settings,
+  LogOut,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useLogout } from '@/api/auth';
 
 const NAV_ITEMS = [
   { label: 'Home', href: '/dashboard', icon: Home },
@@ -24,6 +26,12 @@ const NAV_ITEMS = [
 
 export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const { mutate: logout, isPending: loggingOut } = useLogout();
+
+  const handleLogout = () => {
+    onNavigate?.();
+    logout();
+  };
 
   return (
     <aside className='flex h-full w-[220px] shrink-0 flex-col border-r border-stroke-2 bg-white px-3 py-5'>
@@ -64,6 +72,16 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           );
         })}
       </nav>
+
+      {/* Log out */}
+      <button
+        onClick={handleLogout}
+        disabled={loggingOut}
+        className='flex items-center gap-2.5 px-2 py-2 rounded-lg text-sm text-xental-text-primary-500 hover:bg-failed-surface hover:text-failed transition-colors disabled:opacity-60 mb-2'
+      >
+        <LogOut className='w-4 h-4 shrink-0' />
+        {loggingOut ? 'Signing out…' : 'Log out'}
+      </button>
 
       {/* PayLibre card */}
       <div

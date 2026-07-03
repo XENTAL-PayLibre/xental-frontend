@@ -5,15 +5,7 @@ import axios, {
 } from 'axios';
 import { API_ENDPOINTS } from '@/api/api-endpoints';
 import { getApiBaseUrl } from '@/lib/api-base-url';
-import {
-  getToken,
-  getRefreshToken,
-  isAccessTokenExpired,
-  invalidateAccessTokenCache,
-  setToken,
-  logoutUser,
-} from './get-token';
-import { refreshSessionAction } from '@/actions/auth';
+import { invalidateAccessTokenCache, logoutUser } from './get-token';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 export type ErrorData = {
@@ -26,7 +18,7 @@ type RetryableConfig = InternalAxiosRequestConfig & {
 
 // ── Singleton & shared refresh promise ────────────────────────────────────
 let apiInstance: AxiosInstance | null = null;
-let refreshPromise: Promise<string | null> | null = null;
+let refreshPromise: Promise<void> | null = null;
 
 /** Call after login so a prior failed refresh doesn't block the new session. */
 export function resetAuthRefreshState() {
@@ -43,33 +35,14 @@ function isAuthEndpoint(url: string) {
   );
 }
 
-function setAuthHeader(config: InternalAxiosRequestConfig, token: string) {
-  if (typeof config.headers?.set === 'function') {
-    config.headers.set('Authorization', `Bearer ${token}`);
-  } else {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-}
-
-function shouldProactivelyRefresh(token: string | null): boolean {
-  if (!token) return true;
-  return isAccessTokenExpired();
-}
-
-// ── Coalesced refresh ──────────────────────────────────────────────────────
-function coalescedRefresh(): Promise<string | null> {
-  refreshPromise ??= refreshSessionAction()
-    .then((result) => {
-      if (result.success && result.accessToken) {
-        setToken('access_token', result.accessToken, result.expiresIn);
-        return result.accessToken;
-      }
-      if (result.reason === 'server_error') throw new Error('server_error');
-      return null;
-    })
-    .catch((err) => {
-      throw err instanceof Error ? err : new Error('server_error');
-    })
+// ── Coalesced refresh (cookie session) ─────────────────────────────────────
+// The dashboard session lives in HttpOnly xnt_access / xnt_refresh cookies. Hitting the
+// refresh endpoint with credentials makes the browser send xnt_refresh; the API rotates
+// both cookies. There is no token to read or store — success just means "cookies rotated".
+function coalescedRefresh(): Promise<void> {
+  refreshPromise ??= getApi()
+    .post(API_ENDPOINTS.AUTH.REFRESH, {})
+    .then(() => undefined)
     .finally(() => {
       refreshPromise = null;
     });
@@ -81,35 +54,16 @@ async function handleUnauthorized(
   error: AxiosError,
   originalRequest: RetryableConfig,
 ): Promise<unknown> {
-  const refreshToken = getRefreshToken();
-  if (!refreshToken) {
-    logoutUser();
-    return Promise.reject(error);
-  }
-
   originalRequest._retry = true;
   invalidateAccessTokenCache();
 
-  // If a refresh is already in flight, wait for it
-  const activeRefresh = refreshPromise;
-  if (activeRefresh) {
-    try {
-      const newToken = await activeRefresh;
-      if (!newToken) { logoutUser(); return Promise.reject(error); }
-      setAuthHeader(originalRequest, newToken);
-      return getApi()(originalRequest);
-    } catch {
-      logoutUser();
-      return Promise.reject(error);
-    }
-  }
-
   try {
-    const newToken = await coalescedRefresh();
-    if (!newToken) { logoutUser(); return Promise.reject(error); }
-    setAuthHeader(originalRequest, newToken);
+    // Wait for an in-flight refresh, or start one. Browser carries the refresh cookie.
+    await (refreshPromise ?? coalescedRefresh());
+    // Cookies were rotated — retry the original request (fresh xnt_access is sent automatically).
     return getApi()(originalRequest);
   } catch {
+    // Refresh cookie is gone/expired — end the session cleanly.
     logoutUser();
     return Promise.reject(error);
   }
@@ -121,32 +75,11 @@ function getApi(): AxiosInstance {
 
   apiInstance = axios.create({
     baseURL: getApiBaseUrl(),
+    // Send + receive the HttpOnly session cookies (xnt_access / xnt_refresh) on every call.
     withCredentials: true,
   });
 
-  // Request interceptor — attach access token (proactively refreshes if expired)
-  apiInstance.interceptors.request.use(
-    async (config) => {
-      const url = String(config.url ?? '');
-      if (!isAuthEndpoint(url)) {
-        const token = getToken();
-        if (token && !shouldProactivelyRefresh(token)) {
-          setAuthHeader(config, token);
-        } else if (getRefreshToken()) {
-          try {
-            const fresh = await coalescedRefresh();
-            if (fresh) setAuthHeader(config, fresh);
-          } catch {
-            // proceed without token; 401 handler will catch it
-          }
-        }
-      }
-      return config;
-    },
-    (error) => Promise.reject(error),
-  );
-
-  // Response interceptor — handle 401 with token refresh
+  // Response interceptor — on 401, rotate the session cookie once and retry.
   apiInstance.interceptors.response.use(
     (response) => response,
     async (error: AxiosError) => {

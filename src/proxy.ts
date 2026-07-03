@@ -10,12 +10,12 @@ const protectedRoutes = ['/dashboard'];
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Gate on a first-party session sentinel set by the frontend on login (has_refresh_token).
-  // The real session (xnt_access/xnt_refresh) is HttpOnly on the API's domain, so it is not
-  // visible here when the frontend + API origins differ (e.g. localhost dev → staging API).
-  // Fall back to xnt_refresh for same-site setups where it is visible.
-  const hasSessionCookie =
-    request.cookies.has('xnt_session') || request.cookies.has('xnt_refresh');
+  // Gate solely on the first-party session sentinel the frontend sets on login and clears on
+  // logout. We must NOT fall back to the backend's xnt_refresh cookie: it is HttpOnly and the
+  // frontend cannot delete it, so on same-site deploys a logged-out user would be bounced from
+  // /login back to /dashboard forever (the refresh loop). xnt_session is the one signal we fully
+  // control on both login and logout.
+  const hasSessionCookie = request.cookies.has('xnt_session');
 
   const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
   const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route));

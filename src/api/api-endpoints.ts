@@ -4,9 +4,12 @@ export const API_ENDPOINTS = {
   AUTH: {
     REGISTER:        '/developers/register',
     LOGIN:           '/developers/login',
-    REFRESH:         '/auth/refresh',
-    FORGOT_PASSWORD: '/auth/forgot-password',
-    RESET_PASSWORD:  '/auth/reset-password',
+    // Dashboard session is cookie-based: refresh + logout rotate/clear the HttpOnly
+    // xnt_access / xnt_refresh cookies (no tokens in the body).
+    REFRESH:         '/developers/refresh',
+    LOGOUT:          '/developers/logout',
+    FORGOT_PASSWORD: '/developers/forgot-password',
+    RESET_PASSWORD:  '/developers/reset-password',
     VERIFY_EMAIL:    '/developers/verify-email',
     TOKEN:           '/auth/token',
   },
