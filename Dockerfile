@@ -27,6 +27,13 @@ COPY . .
 # Disable Next.js telemetry during build
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# API base URL, injected per environment by the CI build. NEXT_PUBLIC_* is baked
+# into the client bundle at build time, so it MUST be present here.
+ARG NEXT_PUBLIC_API_URL
+ARG API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV API_URL=$API_URL
+
 RUN pnpm build
 
 # ============================================================
