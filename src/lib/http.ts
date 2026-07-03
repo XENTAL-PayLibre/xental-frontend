@@ -188,6 +188,10 @@ export const patchRequest = async <T, P>(params: { url: string; payload: P }) =>
   return getApi().patch<T>(params.url, params.payload);
 };
 
+export const putRequest = async <T, P>(params: { url: string; payload: P }) => {
+  return getApi().put<T>(params.url, params.payload);
+};
+
 export const deleteRequest = async <T>(params: { url: string }) => {
   const { data } = await getApi().delete<T>(params.url);
   return data;

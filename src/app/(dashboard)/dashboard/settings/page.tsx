@@ -1,20 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { Copy, Eye, EyeOff, MoreVertical, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import ApiKeysManager from '@/components/dashboard/ApiKeysManager';
+import WebhookEndpointsManager from '@/components/dashboard/WebhookEndpointsManager';
+import TeamManager from '@/components/dashboard/TeamManager';
 
 type Tab = 'Profile' | 'Team' | 'Developers' | 'Security';
 const TABS: Tab[] = ['Profile', 'Team', 'Developers', 'Security'];
-
-const TEAM_MEMBERS = [
-  { id: '1', name: 'Tunde Adebayo', email: 'tundeadebayo@gmail.com', role: 'Admin', dateAdded: '2026-02-23' },
-  { id: '2', name: 'Tunde Adebayo', email: 'tundeadebayo@gmail.com', role: 'Employee', dateAdded: '2026-02-23' },
-  { id: '3', name: 'Tunde Adebayo', email: 'tundeadebayo@gmail.com', role: 'Developer', dateAdded: '2026-02-23' },
-];
-const ROLES = ['Admin', 'Employee', 'Developer'];
 
 function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void }) {
   return (
@@ -49,21 +45,6 @@ function InputField({ label, value, onChange, disabled, placeholder }: { label: 
           disabled ? 'bg-xental-bg text-xental-text-primary-400 cursor-default' : 'bg-white focus:ring-2 focus:ring-action-blue/30 focus:border-action-blue'
         )}
       />
-    </div>
-  );
-}
-
-function SelectField({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: string[] }) {
-  return (
-    <div>
-      <label className='block text-xs text-xental-text-primary-400 mb-1'>{label}</label>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className='w-full border border-stroke-2 rounded-lg px-3 py-2 text-sm text-foreground bg-white focus:outline-none focus:ring-2 focus:ring-action-blue/30 focus:border-action-blue'
-      >
-        {options.map((o) => <option key={o}>{o}</option>)}
-      </select>
     </div>
   );
 }
@@ -112,135 +93,15 @@ function ProfileTab() {
 }
 
 function TeamTab() {
-  const [editing, setEditing] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ name: '', email: '', role: '' });
-
-  function startEdit(m: typeof TEAM_MEMBERS[0]) {
-    setEditing(m.id);
-    setEditForm({ name: m.name, email: m.email, role: m.role });
-  }
-
-  function handleSave() {
-    setEditing(null);
-    toast.success('Team member updated');
-  }
-
-  if (editing) {
-    return (
-      <div>
-        <div className='flex items-center justify-between mb-6'>
-          <h3 className='text-sm font-semibold text-foreground'>Basic information</h3>
-          <div className='flex items-center gap-2'>
-            <Button size='sm' variant='outline' className='text-destructive border-destructive hover:bg-red-50' onClick={() => { setEditing(null); toast.success('Member removed'); }}>
-              <Trash2 className='w-3.5 h-3.5 mr-1.5' /> Delete
-            </Button>
-            <Button size='sm' onClick={handleSave}>Save changes</Button>
-          </div>
-        </div>
-        <div className='grid grid-cols-2 gap-4'>
-          <InputField label='Full name' value={editForm.name} onChange={(v) => setEditForm((f) => ({ ...f, name: v }))} />
-          <InputField label='Email' value={editForm.email} onChange={(v) => setEditForm((f) => ({ ...f, email: v }))} />
-          <SelectField label='Role' value={editForm.role} onChange={(v) => setEditForm((f) => ({ ...f, role: v }))} options={ROLES} />
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      <div className='flex items-center justify-between mb-4'>
-        <h3 className='text-sm font-semibold text-foreground'>Team members</h3>
-        <Button size='sm' onClick={() => toast.info('Add team member — coming once API is wired')}>
-          <Plus className='w-3.5 h-3.5 mr-1.5' /> Add team member
-        </Button>
-      </div>
-      <div className='border border-stroke-2 rounded-xl overflow-hidden'>
-        <table className='w-full text-xs'>
-          <thead>
-            <tr className='border-b border-stroke-2 bg-xental-bg'>
-              <th className='text-left px-4 py-3 font-medium text-xental-text-primary-400'>Name</th>
-              <th className='text-left px-4 py-3 font-medium text-xental-text-primary-400'>Role</th>
-              <th className='text-left px-4 py-3 font-medium text-xental-text-primary-400'>Date Added</th>
-              <th className='px-4 py-3' />
-            </tr>
-          </thead>
-          <tbody>
-            {TEAM_MEMBERS.map((m) => (
-              <tr key={m.id} className='border-b border-stroke-2 last:border-0 bg-white'>
-                <td className='px-4 py-3'>
-                  <p className='font-medium text-foreground'>{m.name}</p>
-                  <p className='text-xental-text-primary-400'>{m.email}</p>
-                </td>
-                <td className='px-4 py-3 text-xental-text-primary-500'>{m.role}</td>
-                <td className='px-4 py-3 text-xental-text-primary-500'>{m.dateAdded}</td>
-                <td className='px-4 py-3'>
-                  <div className='flex items-center gap-2 justify-end'>
-                    <button onClick={() => startEdit(m)}><Pencil className='w-3.5 h-3.5 text-xental-text-primary-400 hover:text-action-blue' /></button>
-                    <button><MoreVertical className='w-3.5 h-3.5 text-xental-text-primary-400' /></button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
+  return <TeamManager />;
 }
 
 function DevelopersTab() {
-  const [webhookUrl, setWebhookUrl] = useState('ugprg3l98p837rhbcoboyp8378ewo8yp8p932');
-  const [copied, setCopied] = useState(false);
-  const [keyVisible, setKeyVisible] = useState(false);
-  const API_KEY = 'bjwpjfeup84981928';
-
-  function handleCopy() {
-    navigator.clipboard.writeText(API_KEY);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-    toast.success('API key copied to clipboard');
-  }
-
   return (
     <div className='flex flex-col gap-6'>
-      <div>
-        <h3 className='text-sm font-semibold text-foreground mb-3'>API Keys</h3>
-        <div className='border border-stroke-2 rounded-xl overflow-hidden'>
-          <div className='flex items-center justify-between px-4 py-3 bg-white'>
-            <span className='text-sm text-foreground font-medium'>Xental</span>
-            <div className='flex items-center gap-3'>
-              <span className='text-xs text-xental-text-primary-400 font-mono'>
-                {keyVisible ? API_KEY : '••••••••••••••••'}
-              </span>
-              <button onClick={() => setKeyVisible((v) => !v)}>
-                {keyVisible ? <EyeOff className='w-3.5 h-3.5 text-xental-text-primary-400 hover:text-foreground' /> : <Eye className='w-3.5 h-3.5 text-xental-text-primary-400 hover:text-foreground' />}
-              </button>
-              <button onClick={handleCopy}>
-                <Copy className={cn('w-3.5 h-3.5', copied ? 'text-success' : 'text-xental-text-primary-400 hover:text-action-blue')} />
-              </button>
-              <button><MoreVertical className='w-3.5 h-3.5 text-xental-text-primary-400' /></button>
-            </div>
-          </div>
-        </div>
-        <Button size='sm' className='mt-3' onClick={() => toast.info('API key generation — coming once API is wired')}>
-          <Plus className='w-3.5 h-3.5 mr-1.5' /> Create API Key
-        </Button>
-      </div>
-
-      <div>
-        <h3 className='text-sm font-semibold text-foreground mb-3'>Webhooks</h3>
-        <div>
-          <label className='block text-xs text-xental-text-primary-400 mb-1'>Webhook URL</label>
-          <input
-            className='w-full border border-stroke-2 rounded-lg px-3 py-2 text-sm text-foreground font-mono focus:outline-none focus:ring-2 focus:ring-action-blue/30 focus:border-action-blue'
-            value={webhookUrl}
-            onChange={(e) => setWebhookUrl(e.target.value)}
-            placeholder='https://yourdomain.com/webhook'
-          />
-        </div>
-        <Button size='sm' className='mt-3 bg-gray-900 hover:bg-gray-800 text-white' onClick={() => { if (webhookUrl) toast.success('Webhook URL saved'); else toast.error('Enter a webhook URL'); }}>
-          <Plus className='w-3.5 h-3.5 mr-1.5' /> Save webhook
-        </Button>
+      <ApiKeysManager />
+      <div className='border-t border-stroke-2 pt-6'>
+        <WebhookEndpointsManager />
       </div>
     </div>
   );

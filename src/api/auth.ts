@@ -4,6 +4,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { postRequest, resetAuthRefreshState } from '@/lib/http';
+import { markSession } from '@/lib/get-token';
 import { API_ENDPOINTS } from './api-endpoints';
 import type { RegisterPayload, RegisterResponse, LoginPayload, LoginResponse } from './types/auth';
 
@@ -80,12 +81,12 @@ export function useLogin() {
 
     async onSuccess() {
       resetAuthRefreshState();
-      
-      // Since cookies are HttpOnly, we just set a flag to know the user is logged in
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('has_refresh_token', 'true');
-      }
-      
+
+      // The real session cookies are HttpOnly + on the API's domain (invisible to this origin
+      // when they differ, e.g. localhost → staging API). Set a first-party sentinel cookie so the
+      // Next proxy/middleware can gate the dashboard routes.
+      markSession();
+
       toast.success('Welcome back!');
       router.push('/dashboard');
     },
