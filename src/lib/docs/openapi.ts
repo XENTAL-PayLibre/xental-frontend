@@ -6,11 +6,11 @@ export const DOCS_API_BASE =
 
 /**
  * Sandbox API base — a separate host for test-mode integration (like Nomba's sandbox).
- * Defaults to the staging deployment, which already runs as our sandbox; point this at a
- * vanity host (e.g. https://sandbox.xental.online) once its DNS/cert are in place.
+ * Routes to the staging deployment, which runs as our sandbox. Overridable via
+ * NEXT_PUBLIC_DOCS_SANDBOX_BASE.
  */
 export const DOCS_SANDBOX_BASE =
-  process.env.NEXT_PUBLIC_DOCS_SANDBOX_BASE?.replace(/\/$/, '') || 'https://api.staging.xental.online';
+  process.env.NEXT_PUBLIC_DOCS_SANDBOX_BASE?.replace(/\/$/, '') || 'https://sandbox.xental.online';
 
 export const DOCS_ENVIRONMENTS = [
   { id: 'live', label: 'Live', base: DOCS_API_BASE },
