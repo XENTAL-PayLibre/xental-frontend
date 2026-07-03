@@ -10,9 +10,12 @@ const protectedRoutes = ['/dashboard'];
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Check for the presence of the session cookie.
-  // Check for 'xnt_refresh' because it is the long-lived session identifier.
-  const hasSessionCookie = request.cookies.has('xnt_refresh');
+  // Gate on a first-party session sentinel set by the frontend on login (has_refresh_token).
+  // The real session (xnt_access/xnt_refresh) is HttpOnly on the API's domain, so it is not
+  // visible here when the frontend + API origins differ (e.g. localhost dev → staging API).
+  // Fall back to xnt_refresh for same-site setups where it is visible.
+  const hasSessionCookie =
+    request.cookies.has('xnt_session') || request.cookies.has('xnt_refresh');
 
   const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
   const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route));

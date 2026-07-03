@@ -8,5 +8,23 @@ export const API_ENDPOINTS = {
     FORGOT_PASSWORD: '/auth/forgot-password',
     RESET_PASSWORD:  '/auth/reset-password',
     VERIFY_EMAIL:    '/developers/verify-email',
+    TOKEN:           '/auth/token',
+  },
+  API_KEYS: {
+    BASE:   '/api-keys',
+    ROTATE: (id: string) => `/api-keys/${id}/rotate`,
+    ONE:    (id: string) => `/api-keys/${id}`,
+  },
+  ONBOARDING: {
+    STATUS: '/onboarding',
+  },
+  WEBHOOKS: {
+    BASE: '/webhook-endpoints',
+    ONE:  (id: string) => `/webhook-endpoints/${id}`,
+  },
+  TEAM: {
+    BASE:   '/team',
+    ONE:    (id: string) => `/team/${id}`,
+    ACCEPT: '/team/accept',
   },
 } as const;

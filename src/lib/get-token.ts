@@ -80,6 +80,19 @@ export function removeToken(key: string) {
   if (key === COOKIE_KEYS.access_token) cachedToken = null;
 }
 
+/**
+ * Mark an active session with a first-party, readable cookie the Next proxy (middleware) can see.
+ * The real session (xnt_access/xnt_refresh) is HttpOnly and lives on the API's domain, so it is
+ * invisible to the frontend origin when they differ (e.g. localhost dev → staging API). This
+ * sentinel is what gates the dashboard routes; it is cleared on logout.
+ */
+export const SESSION_SENTINEL = 'xnt_session';
+
+export function markSession(days = 14) {
+  if (typeof window === 'undefined') return;
+  cookies.set(SESSION_SENTINEL, '1', { path: '/', sameSite: 'lax', maxAge: days * 24 * 60 * 60 });
+}
+
 // ── Auth cleanup & logout ──────────────────────────────────────────────────
 export function clearAuthCookies() {
   invalidateAccessTokenCache();
@@ -87,6 +100,7 @@ export function clearAuthCookies() {
   removeToken(COOKIE_KEYS.refresh_token);
   removeToken(COOKIE_KEYS.has_refresh);
   removeToken(COOKIE_KEYS.user_profile);
+  cookies.remove(SESSION_SENTINEL, { path: '/' });
   if (typeof window !== 'undefined') {
     sessionStorage.removeItem(ACCESS_TOKEN_EXPIRY_KEY);
     localStorage.removeItem(COOKIE_KEYS.has_refresh);

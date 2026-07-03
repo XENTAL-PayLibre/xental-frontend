@@ -22,11 +22,11 @@ const NAV_ITEMS = [
   { label: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
 
   return (
-    <aside className='w-[200px] shrink-0 flex flex-col h-screen bg-white border-r border-stroke-2 px-3 py-5'>
+    <aside className='flex h-full w-[220px] shrink-0 flex-col border-r border-stroke-2 bg-white px-3 py-5'>
       {/* Logo */}
       <div className='px-2 mb-6'>
         <Image
@@ -50,6 +50,7 @@ export default function Sidebar() {
             <Link
               key={href}
               href={href}
+              onClick={onNavigate}
               className={cn(
                 'flex items-center gap-2.5 px-2 py-2 rounded-lg text-sm transition-colors',
                 isActive
