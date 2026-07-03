@@ -188,6 +188,11 @@ export const patchRequest = async <T, P>(params: { url: string; payload: P }) =>
   return getApi().patch<T>(params.url, params.payload);
 };
 
+/** Multipart POST. Let the browser/axios set the Content-Type boundary automatically. */
+export const postFormRequest = async <T>(params: { url: string; form: FormData }) => {
+  return getApi().post<T>(params.url, params.form);
+};
+
 export const putRequest = async <T, P>(params: { url: string; payload: P }) => {
   return getApi().put<T>(params.url, params.payload);
 };

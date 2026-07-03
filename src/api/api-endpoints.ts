@@ -16,7 +16,11 @@ export const API_ENDPOINTS = {
     ONE:    (id: string) => `/api-keys/${id}`,
   },
   ONBOARDING: {
-    STATUS: '/onboarding',
+    STATUS:    '/onboarding',
+    DEVELOPER: '/onboarding/developer',
+    BUSINESS:  '/onboarding/business',
+    DOCUMENTS: '/onboarding/documents',
+    SUBMIT:    '/onboarding/submit',
   },
   WEBHOOKS: {
     BASE: '/webhook-endpoints',

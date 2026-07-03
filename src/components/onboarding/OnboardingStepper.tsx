@@ -5,9 +5,10 @@ import { cn } from '@/lib/utils';
 
 const STEPS = [
   { label: 'Business\nInformation' },
-  { label: 'Business\nVerification' },
-  { label: 'Account' },
-  { label: 'Review & Submit' },
+  { label: 'Personal\nVerification' },
+  { label: 'Business\nDocuments' },
+  { label: 'Settlement\nAccount' },
+  { label: 'Review &\nSubmit' },
 ];
 
 interface Props {

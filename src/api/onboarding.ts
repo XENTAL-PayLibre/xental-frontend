@@ -1,7 +1,7 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import { getRequest } from '@/lib/http';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { getRequest, postRequest, postFormRequest } from '@/lib/http';
 import { API_ENDPOINTS } from './api-endpoints';
 
 export type TrackStatus =
@@ -18,12 +18,105 @@ export interface OnboardingStatus {
   decisionReason: string | null;
 }
 
+const STATUS_QUERY = ['onboarding-status'];
+
 export function useOnboardingStatus() {
   return useQuery({
-    queryKey: ['onboarding-status'],
+    queryKey: STATUS_QUERY,
     queryFn: ({ signal }) => getRequest<OnboardingStatus>({ url: API_ENDPOINTS.ONBOARDING.STATUS, signal }),
     staleTime: 60_000,
     retry: false,
+  });
+}
+
+// ── Submission payloads (mirror the backend contracts) ─────────────────────
+/** POST /onboarding/developer — SubmitDeveloperKycRequest */
+export interface DeveloperKycInput {
+  fullName: string;
+  dateOfBirth: string;          // yyyy-MM-dd (DateOnly)
+  country: string;
+  address: string;
+  idType: 'Bvn' | 'Nin';
+  idNumber: string;             // 11 digits
+  bankName: string;
+  bankCode: string;
+  bankAccountName: string;
+  bankAccountNumber: string;
+  portfolioUrl?: string;
+  projectDescription?: string;
+}
+
+/** POST /onboarding/business — SubmitBusinessKybRequest */
+export interface BusinessKybInput {
+  legalName: string;
+  registrationNumber: string;
+  businessType: string;
+  industry: string;
+  country: string;
+  address: string;
+  contactCountryCode: string;
+  contactPhone: string;
+  website?: string;
+  settlementBankName: string;
+  settlementBankCode: string;
+  settlementAccountName: string;
+  settlementAccountNumber: string;
+}
+
+export type KycDocumentType = 'CertificateOfIncorporation' | 'ProofOfAddress';
+
+// ── Mutations ──────────────────────────────────────────────────────────────
+export function useSubmitDeveloperKyc() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationKey: ['onboarding', 'developer'],
+    mutationFn: async (input: DeveloperKycInput) => {
+      const res = await postRequest<OnboardingStatus, DeveloperKycInput>({
+        url: API_ENDPOINTS.ONBOARDING.DEVELOPER, payload: input,
+      });
+      return res.data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: STATUS_QUERY }),
+  });
+}
+
+export function useSubmitBusinessKyb() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationKey: ['onboarding', 'business'],
+    mutationFn: async (input: BusinessKybInput) => {
+      const res = await postRequest<OnboardingStatus, BusinessKybInput>({
+        url: API_ENDPOINTS.ONBOARDING.BUSINESS, payload: input,
+      });
+      return res.data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: STATUS_QUERY }),
+  });
+}
+
+export function useUploadKycDocument() {
+  return useMutation({
+    mutationKey: ['onboarding', 'documents'],
+    mutationFn: async ({ type, file }: { type: KycDocumentType; file: File }) => {
+      const form = new FormData();
+      form.append('type', type);
+      form.append('file', file);
+      await postFormRequest<void>({ url: API_ENDPOINTS.ONBOARDING.DOCUMENTS, form });
+    },
+  });
+}
+
+export function useSubmitOnboarding() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationKey: ['onboarding', 'submit'],
+    mutationFn: async (attestationAccepted: boolean) => {
+      const res = await postRequest<OnboardingStatus, { attestationAccepted: boolean }>({
+        url: API_ENDPOINTS.ONBOARDING.SUBMIT, payload: { attestationAccepted },
+      });
+      return res.data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: STATUS_QUERY }),
   });
 }
 

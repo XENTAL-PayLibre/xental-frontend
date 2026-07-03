@@ -28,7 +28,7 @@ const INDUSTRIES = [
   'Other',
 ];
 
-const AFRICAN_COUNTRIES = [
+export const AFRICAN_COUNTRIES = [
   'Algeria', 'Angola', 'Benin', 'Botswana', 'Burkina Faso', 'Burundi',
   'Cabo Verde', 'Cameroon', 'Central African Republic', 'Chad', 'Comoros',
   'Congo, Democratic Republic of the', 'Congo, Republic of the', 'Djibouti',
@@ -152,7 +152,7 @@ function SelectInput({
 }
 
 const REQUIRED: (keyof BusinessDetailsData)[] = [
-  'businessName', 'businessType', 'industry', 'country', 'businessAddress', 'phoneNumber',
+  'businessName', 'registrationNumber', 'businessType', 'industry', 'country', 'businessAddress', 'phoneNumber',
 ];
 
 export default function BusinessDetailsStep({ data, onChange, onNext, submitted }: Props) {
@@ -195,11 +195,12 @@ export default function BusinessDetailsStep({ data, onChange, onNext, submitted 
         </div>
 
         <div>
-          <FieldLabel label='Business registration number' />
+          <FieldLabel label='Business registration number' required />
           <TextInput
             value={data.registrationNumber}
             onChange={set('registrationNumber')}
             placeholder='Enter your business registration number'
+            error={isEmpty('registrationNumber')}
           />
         </div>
 

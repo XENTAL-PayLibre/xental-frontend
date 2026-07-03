@@ -1,17 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { FileText, Trash2 } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { BusinessDetailsData } from './BusinessDetailsStep';
 import type { BusinessVerificationData } from './BusinessVerificationStep';
 import type { AccountDetailsData } from './AccountDetailsStep';
+import type { DeveloperKycData } from './DeveloperKycStep';
 
 interface Props {
   businessDetails: BusinessDetailsData;
+  developerKyc: DeveloperKycData;
   verification: BusinessVerificationData;
   accountDetails: AccountDetailsData;
-  onSubmit: () => void;
+  onSubmit: (attestationAccepted: boolean) => void;
   onBack: () => void;
   loading?: boolean;
 }
@@ -32,6 +34,7 @@ function SectionTitle({ title }: { title: string }) {
 
 export default function ReviewSubmitStep({
   businessDetails: bd,
+  developerKyc: dk,
   verification,
   accountDetails: ad,
   onSubmit,
@@ -64,6 +67,21 @@ export default function ReviewSubmitStep({
         </p>
       </div>
 
+      {/* Personal verification (KYC) */}
+      <div className='border-t border-stroke-2 pt-6 mb-6'>
+        <SectionTitle title='Personal verification' />
+        <div className='grid grid-cols-2 gap-x-8 gap-y-4'>
+          <ReviewRow label='Full name' value={dk.fullName} />
+          <ReviewRow label='Date of birth' value={dk.dateOfBirth} />
+          <ReviewRow label='Country of residence' value={dk.country} />
+          <ReviewRow label='Residential address' value={dk.address} />
+          <ReviewRow label='ID type' value={dk.idType === 'Bvn' ? 'BVN' : dk.idType === 'Nin' ? 'NIN' : ''} />
+          <ReviewRow label='ID number' value={dk.idNumber ? `••••••${dk.idNumber.slice(-3)}` : ''} />
+          <ReviewRow label='Portfolio / website' value={dk.portfolioUrl} />
+          <ReviewRow label='What are you building' value={dk.projectDescription} />
+        </div>
+      </div>
+
       <div className='border-t border-stroke-2 pt-6 mb-6'>
         <SectionTitle title='Business documents' />
         <div className='flex flex-col gap-2'>
@@ -77,9 +95,8 @@ export default function ReviewSubmitStep({
               </div>
               <div className='flex-1'>
                 <p className='text-xs font-medium text-foreground'>{label}</p>
-                <p className='text-[10px] text-success'>Complete</p>
+                <p className='text-[10px] text-success'>Ready to upload</p>
               </div>
-              <Trash2 className='w-4 h-4 text-destructive/60' />
             </div>
           ))}
         </div>
@@ -90,7 +107,7 @@ export default function ReviewSubmitStep({
       </div>
 
       <div className='border-t border-stroke-2 pt-6 mb-6'>
-        <SectionTitle title='Account details' />
+        <SectionTitle title='Settlement account' />
         <div className='grid grid-cols-2 gap-x-8 gap-y-4'>
           <ReviewRow label='Bank name' value={ad.bankName} />
           <div />
@@ -99,7 +116,7 @@ export default function ReviewSubmitStep({
         </div>
       </div>
 
-      {/* Terms — only this checkbox remains */}
+      {/* Attestation */}
       <label className='flex items-start gap-2 cursor-pointer'>
         <input
           type='checkbox'
@@ -108,7 +125,7 @@ export default function ReviewSubmitStep({
           className='mt-0.5 accent-action-blue'
         />
         <span className='text-xs text-xental-text-primary-400'>
-          I certify that the information provided is accurate and I agree to the Kredar{' '}
+          I certify that the information provided is accurate and I agree to the Xental{' '}
           <span className='text-action-blue underline cursor-pointer'>Terms of Service</span> and{' '}
           <span className='text-action-blue underline cursor-pointer'>Privacy Policy</span>
         </span>
@@ -121,7 +138,7 @@ export default function ReviewSubmitStep({
         >
           Back
         </button>
-        <Button onClick={onSubmit} disabled={!agreed || loading} className='px-8'>
+        <Button onClick={() => onSubmit(agreed)} disabled={!agreed || loading} className='px-8'>
           {loading ? 'Submitting…' : 'Submit'}
         </Button>
       </div>
