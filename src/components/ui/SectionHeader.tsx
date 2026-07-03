@@ -10,6 +10,7 @@ interface SectionHeaderProps {
   description?: ReactNode;
   align?: 'left' | 'center';
   className?: string;
+  titleClass?: string;
 }
 
 const SectionHeader = ({
@@ -19,6 +20,7 @@ const SectionHeader = ({
   description,
   align = 'center',
   className,
+  titleClass,
 }: SectionHeaderProps) => {
   return (
     <div
@@ -43,7 +45,8 @@ const SectionHeader = ({
 
       <h2
         className={cn(
-          'text-3xl mb-6 font-semibold text-muted-foreground leading-[1.2] lg:text-5xl'
+          'text-3xl mb-6 font-semibold text-muted-foreground leading-[1.2] lg:text-5xl',
+          titleClass
         )}
       >
         {title}

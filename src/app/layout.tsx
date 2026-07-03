@@ -15,7 +15,7 @@ const interMono = JetBrains_Mono({
 });
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
-const appName = 'Personal Trainer || FITCALL.ME';
+const appName = 'Xental';
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     template: `%s · ${appName}`,
   },
   description:
-    'Personal Trainer — Your dedicated fitness companion for personalized workouts and professional guidance.',
+    'Xental — The all-in-one payment and financial operations platform for businesses. Accept payments, manage settlements, and scale with confidence.',
   icons: {
     icon: 'images/logo-icon.svg',
     shortcut: 'images/logo-icon.svg',

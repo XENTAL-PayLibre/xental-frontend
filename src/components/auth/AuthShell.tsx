@@ -2,19 +2,15 @@ import React from 'react';
 import Image from 'next/image';
 
 interface AuthShellProps {
-  children: React.ReactNode;
+  left?: React.ReactNode;
+  right: React.ReactNode;
 }
 
-export default function AuthShell({ children }: AuthShellProps) {
+export default function AuthShell({ left, right }: AuthShellProps) {
   return (
-    /**
-     * CSS Grid: two columns — [42% | 1fr].
-     * Grid rows have a definite height, so next/image fill works on the left panel.
-     */
-    <div className='grid h-screen w-full bg-white p-3 gap-3 lg:grid-cols-[42%_1fr]'>
-
+    <div className='grid h-screen w-full bg-white p-3 gap-3 lg:grid-cols-[55%_1fr]'>
       {/* ── Left: Brand cover ───────────────────────────────── */}
-      <div className='hidden lg:block relative overflow-hidden rounded-2xl'>
+      <div className='hidden lg:block relative overflow-hidden rounded-[24px]'>
         <Image
           src='/images/auth/brand-cover.png'
           alt='Brand cover'
@@ -23,13 +19,24 @@ export default function AuthShell({ children }: AuthShellProps) {
           className='object-cover'
           priority
         />
+
+        <div className='absolute inset-0 mx-13 my-10'>
+          <Image
+            src='/images/full-logo(white).svg'
+            alt='Full logo'
+            width={200}
+            height={100}
+            unoptimized
+          />
+        </div>
+
+        {left && <div className='absolute inset-x-13 bottom-10'>{left}</div>}
       </div>
 
       {/* ── Right: Form panel ───────────────────────────────── */}
-      <div className='flex flex-col items-center justify-center px-6 py-12 overflow-y-auto'>
-        <div className='w-full max-w-md'>{children}</div>
+      <div className='flex flex-col items-center justify-center sm:px-6 py-12 overflow-y-auto'>
+        <div className='w-full sm:max-w-125 px-1 lg:p-4'>{right}</div>
       </div>
-
     </div>
   );
 }
