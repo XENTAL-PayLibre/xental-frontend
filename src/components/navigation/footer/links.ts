@@ -19,9 +19,9 @@ export const FOOTER_LINKS = [
   {
     heading: 'Developers',
     links: [
-      { label: 'Documentation', href: '/docs' },
-      { label: 'API Reference', href: '/docs/api-reference' },
-      { label: 'Webhooks', href: '/docs/webhooks' },
+      { label: 'Documentation', href: '/documentation' },
+      { label: 'API Reference', href: '/documentation/api-reference' },
+      { label: 'Webhooks', href: '/documentation/api-reference/webhooks' },
     ],
   },
   {

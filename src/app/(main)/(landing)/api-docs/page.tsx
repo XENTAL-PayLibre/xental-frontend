@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 
-// /api-docs is the navbar shortcut — redirects to the canonical docs URL.
+// Legacy path — redirects to the canonical /documentation URL.
 export default function ApiDocsPage() {
-  redirect('/docs/api-reference');
+  redirect('/documentation');
 }

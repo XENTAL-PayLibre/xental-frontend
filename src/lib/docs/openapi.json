@@ -1,0 +1,4653 @@
+{
+  "openapi": "3.0.4",
+  "info": {
+    "title": "Xental API",
+    "description": "**Xental** — reusable dedicated virtual accounts + automatic reconciliation on Nomba.\n\n## Quickstart\n1. Register a developer account and verify your email at the dashboard.\n2. Create an API key (Dashboard → API keys) — copy the client secret, shown once.\n3. Exchange it for an API token: `POST /api/v1/auth/token` with `{clientId, clientSecret}`.\n4. Send `Authorization: Bearer <token>` on every payments call.\n5. Create a virtual account: `POST /api/v1/virtual-accounts` (optionally with `expectedAmountKobo`).\n6. Fund it — the Nomba webhook drives reconciliation; poll `GET /api/v1/transactions` or subscribe to outbound webhooks.\n7. Configure settlement (Dashboard → `PUT /api/v1/settings/settlement`) to auto-sweep collected funds to your bank.\n\n## Auth planes\n- **Dashboard** (cookie session): developer login, API keys, settings, insights, webhook endpoints.\n- **API** (bearer token): virtual accounts, transactions, transfers.\n\nAll money is integer **kobo**. Provider (Nomba) inflow webhooks arrive at `POST /webhooks/nomba`.",
+    "contact": {
+      "name": "Xental",
+      "url": "https://xental.online"
+    },
+    "version": "v1"
+  },
+  "paths": {
+    "/api/v1/admin/auth/login": {
+      "post": {
+        "tags": [
+          "AdminAuth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminLoginRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminLoginRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminLoginResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminLoginResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminLoginResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/admins": {
+      "post": {
+        "tags": [
+          "AdminManagement"
+        ],
+        "summary": "Create an admin (SuperAdmin only).",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAdminRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAdminRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAdminRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/mfa/enroll": {
+      "post": {
+        "tags": [
+          "AdminManagement"
+        ],
+        "summary": "Enroll TOTP MFA for the current admin — returns the otpauth URI for the QR code.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/MfaEnrollResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MfaEnrollResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MfaEnrollResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/onboarding": {
+      "get": {
+        "tags": [
+          "AdminOnboarding"
+        ],
+        "summary": "Onboarding applications, optionally filtered to a track status (e.g. UnderReview).",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AdminOnboardingSummary"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AdminOnboardingSummary"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AdminOnboardingSummary"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/onboarding/{tenantId}": {
+      "get": {
+        "tags": [
+          "AdminOnboarding"
+        ],
+        "summary": "Full detail for one tenant: fields, auto-check results, and document download URLs.",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminOnboardingDetail"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminOnboardingDetail"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminOnboardingDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/onboarding/{tenantId}/approve": {
+      "post": {
+        "tags": [
+          "AdminOnboarding"
+        ],
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewActionRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewActionRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewActionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/onboarding/{tenantId}/reject": {
+      "post": {
+        "tags": [
+          "AdminOnboarding"
+        ],
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewActionRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewActionRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewActionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/onboarding/{tenantId}/request-info": {
+      "post": {
+        "tags": [
+          "AdminOnboarding"
+        ],
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewActionRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewActionRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewActionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/reconciliation/summary": {
+      "get": {
+        "tags": [
+          "AdminReconciliation"
+        ],
+        "summary": "Counts per exception bucket (headline tiles).",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReconSummary"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReconSummary"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReconSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/reconciliation": {
+      "get": {
+        "tags": [
+          "AdminReconciliation"
+        ],
+        "summary": "Transactions in a bucket: review|unknown|overpaid|underpaid|highrisk|reversals.",
+        "parameters": [
+          {
+            "name": "bucket",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "take",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReconTransactionView"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReconTransactionView"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReconTransactionView"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/reconciliation/settlements/failed": {
+      "get": {
+        "tags": [
+          "AdminReconciliation"
+        ],
+        "summary": "Fully-paid accounts whose auto-settlement failed and awaits retry.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FailedSettlementView"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FailedSettlementView"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FailedSettlementView"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/reconciliation/settlements/{virtualAccountId}/retry": {
+      "post": {
+        "tags": [
+          "AdminReconciliation"
+        ],
+        "summary": "Retry a failed settlement (the worker re-attempts the sweep next cycle).",
+        "parameters": [
+          {
+            "name": "virtualAccountId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/.well-known/llms.txt": {
+      "get": {
+        "tags": [
+          "AgentDiscovery"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/api-keys": {
+      "post": {
+        "tags": [
+          "ApiKeys"
+        ],
+        "summary": "Create a new API key. The client secret is shown only in this response.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApiKeyRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApiKeyRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApiKeyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Key created; body carries the one-time client secret.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "ApiKeys"
+        ],
+        "summary": "List the current account's API keys (secrets are never returned here).",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApiKeyResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApiKeyResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApiKeyResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/api-keys/{id}/rotate": {
+      "post": {
+        "tags": [
+          "ApiKeys"
+        ],
+        "summary": "Revoke the existing key and issue a fresh one with the same label + mode.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rotated; body carries the new one-time client secret.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Key not found for this account.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/api-keys/{id}": {
+      "delete": {
+        "tags": [
+          "ApiKeys"
+        ],
+        "summary": "Revoke an API key. Tokens minted from it stop working once they expire.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Revoked."
+          },
+          "404": {
+            "description": "Key not found for this account.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/token": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Exchange client credentials for a short-lived JWT access token.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/checkout/sessions": {
+      "post": {
+        "tags": [
+          "Checkout"
+        ],
+        "summary": "Create a checkout session for one of your virtual accounts (API plane).",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCheckoutSessionRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCheckoutSessionRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCheckoutSessionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutSessionResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutSessionResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutSessionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/checkout/{token}": {
+      "get": {
+        "tags": [
+          "Checkout"
+        ],
+        "summary": "Current payment state for a checkout token (anonymous). 404 if unknown/expired.",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutSnapshotResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutSnapshotResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutSnapshotResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/checkout/{token}": {
+      "get": {
+        "tags": [
+          "Checkout"
+        ],
+        "summary": "Current payment state for a checkout token (anonymous). 404 if unknown/expired.",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutSnapshotResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutSnapshotResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutSnapshotResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/checkout/{token}/stream": {
+      "get": {
+        "tags": [
+          "Checkout"
+        ],
+        "summary": "Server-Sent Events stream of reconciliation status for a checkout token (anonymous).\nEmits the current snapshot immediately, then a `data:` event on every status change.",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/developers/register": {
+      "post": {
+        "tags": [
+          "Developers"
+        ],
+        "summary": "Create an account and email a verification link. Does NOT sign in.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDeveloperRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDeveloperRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDeveloperRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Account created; verify the emailed link before logging in.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An account with this email already exists.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/developers/login": {
+      "post": {
+        "tags": [
+          "Developers"
+        ],
+        "summary": "Log in with email + password (verified accounts only). Sets session cookies.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authenticated; session cookies set.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid email or password.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Email not verified.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/developers/refresh": {
+      "post": {
+        "tags": [
+          "Developers"
+        ],
+        "summary": "Rotate the session using the refresh cookie. Sets fresh cookies.",
+        "responses": {
+          "200": {
+            "description": "Rotated; new session cookies set.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid/expired refresh cookie.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/developers/logout": {
+      "post": {
+        "tags": [
+          "Developers"
+        ],
+        "summary": "Revoke the refresh token and clear the session cookies.",
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/developers/me": {
+      "get": {
+        "tags": [
+          "Developers"
+        ],
+        "summary": "The current account's profile.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeveloperProfileResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeveloperProfileResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeveloperProfileResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/developers/verify-email": {
+      "get": {
+        "tags": [
+          "Developers"
+        ],
+        "summary": "Magic-link target: verify the account's email, then redirect to the app.",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "302": {
+            "description": "Redirects to the app with `?verified=true|false`."
+          }
+        }
+      }
+    },
+    "/api/v1/developers/resend-verification": {
+      "post": {
+        "tags": [
+          "Developers"
+        ],
+        "summary": "Re-send the verification email to the current account.",
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          }
+        }
+      }
+    },
+    "/api/v1/developers/forgot-password": {
+      "post": {
+        "tags": [
+          "Developers"
+        ],
+        "summary": "Request a password-reset link. Always returns 202 (no account enumeration).",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          }
+        }
+      }
+    },
+    "/api/v1/developers/reset-password": {
+      "post": {
+        "tags": [
+          "Developers"
+        ],
+        "summary": "Set a new password from a reset token (must meet the strong-password policy).",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Password updated."
+          },
+          "400": {
+            "description": "Token invalid/expired, or password too weak.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Lightweight liveness probe for the API.",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/insights": {
+      "get": {
+        "tags": [
+          "Insights"
+        ],
+        "summary": "Headline metrics: collection rate, outstanding deficit, reconciliation breakdown, risk.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/InsightsResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InsightsResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InsightsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/oauth/{provider}": {
+      "get": {
+        "tags": [
+          "OAuth"
+        ],
+        "summary": "Begin social login: redirects to the provider's consent screen.",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "302": {
+            "description": "Redirects to the provider."
+          }
+        }
+      }
+    },
+    "/api/v1/auth/oauth/{provider}/callback": {
+      "get": {
+        "tags": [
+          "OAuth"
+        ],
+        "summary": "Provider callback: exchanges the code and forwards to the app with a token.",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "code",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "302": {
+            "description": "Sets session cookies and redirects to the app with `#status=ok` or `#error=…`."
+          }
+        }
+      }
+    },
+    "/api/v1/onboarding": {
+      "get": {
+        "tags": [
+          "Onboarding"
+        ],
+        "summary": "Current onboarding status + tier + whether live keys can be issued yet.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingStatusResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingStatusResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/onboarding/developer": {
+      "post": {
+        "tags": [
+          "Onboarding"
+        ],
+        "summary": "Submit developer KYC. Runs the automated BVN/NIN + NUBAN name-match checks and moves the\ntrack to Under Review (an admin signs off before Live is granted).",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitDeveloperKycRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitDeveloperKycRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitDeveloperKycRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingStatusResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingStatusResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingStatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/onboarding/business": {
+      "post": {
+        "tags": [
+          "Onboarding"
+        ],
+        "summary": "Submit business KYB details (business info + settlement account). Runs CAC + NUBAN checks.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitBusinessKybRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitBusinessKybRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitBusinessKybRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingStatusResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingStatusResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/onboarding/documents": {
+      "post": {
+        "tags": [
+          "Onboarding"
+        ],
+        "summary": "Upload a KYB document (Cert of Incorporation or Proof of Address). PDF/JPG/PNG, ≤10 MB.",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string"
+                  },
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              },
+              "encoding": {
+                "type": {
+                  "style": "form"
+                },
+                "file": {
+                  "style": "form"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/onboarding/submit": {
+      "post": {
+        "tags": [
+          "Onboarding"
+        ],
+        "summary": "Attest and submit the KYB track for admin review (requires both documents present).",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitOnboardingRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitOnboardingRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitOnboardingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingStatusResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingStatusResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/rules": {
+      "get": {
+        "tags": [
+          "Rules"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RuleResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RuleResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RuleResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Rules"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRuleRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRuleRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRuleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/rules/{id}": {
+      "delete": {
+        "tags": [
+          "Rules"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/sandbox/simulate/deposit": {
+      "post": {
+        "tags": [
+          "Sandbox"
+        ],
+        "summary": "Simulate a deposit into one of your virtual accounts (test-mode keys only).",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulateDepositRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulateDepositRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulateDepositRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulatedDepositResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulatedDepositResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulatedDepositResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/settings/settlement": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Current settlement configuration for the account.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettlementConfigResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettlementConfigResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettlementConfigResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Set the settlement bank account and auto-settle threshold.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSettlementRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSettlementRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSettlementRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettlementConfigResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettlementConfigResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettlementConfigResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/settlements/{accountRef}/hold": {
+      "post": {
+        "tags": [
+          "Settlements"
+        ],
+        "summary": "Place an escrow hold on an account so it is not settled until released.",
+        "parameters": [
+          {
+            "name": "accountRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EscrowHoldRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EscrowHoldRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/EscrowHoldRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/EscrowHoldResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EscrowHoldResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EscrowHoldResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/settlements/{accountRef}/release": {
+      "post": {
+        "tags": [
+          "Settlements"
+        ],
+        "summary": "Release the active escrow hold so the account can settle on the next sweep.",
+        "parameters": [
+          {
+            "name": "accountRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/settings/splits": {
+      "get": {
+        "tags": [
+          "SettlementSplits"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SplitLegResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SplitLegResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SplitLegResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "SettlementSplits"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetSplitsRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetSplitsRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetSplitsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SplitLegResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SplitLegResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SplitLegResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sub-merchants": {
+      "post": {
+        "tags": [
+          "SubMerchants"
+        ],
+        "summary": "Create a sub-merchant under the current account.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSubMerchantRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSubMerchantRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSubMerchantRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubMerchantResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubMerchantResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubMerchantResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "SubMerchants"
+        ],
+        "summary": "List the current tenant's sub-merchants.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SubMerchantResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SubMerchantResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SubMerchantResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transactions": {
+      "get": {
+        "tags": [
+          "Transactions"
+        ],
+        "summary": "List transactions, filtered by date range, status, reconciliation, or accountRef.",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/TransactionStatus"
+            }
+          },
+          {
+            "name": "reconciliation",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/ReconciliationStatus"
+            }
+          },
+          {
+            "name": "accountRef",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "take",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TransactionResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TransactionResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TransactionResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transactions/{reference}": {
+      "get": {
+        "tags": [
+          "Transactions"
+        ],
+        "summary": "Fetch a single transaction by its provider reference.",
+        "parameters": [
+          {
+            "name": "reference",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transfers/bank/lookup": {
+      "post": {
+        "tags": [
+          "Transfers"
+        ],
+        "summary": "Resolve the recipient account name before sending (name check).",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BankLookupRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BankLookupRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/BankLookupRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankLookupResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankLookupResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankLookupResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transfers/bank": {
+      "post": {
+        "tags": [
+          "Transfers"
+        ],
+        "summary": "Initiate a bank transfer (idempotent on merchantTxRef).",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTransferRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTransferRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTransferRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Transfer created/initiated.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transfers/{merchantTxRef}": {
+      "get": {
+        "tags": [
+          "Transfers"
+        ],
+        "summary": "Get a transfer by its merchantTxRef.",
+        "parameters": [
+          {
+            "name": "merchantTxRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/virtual-accounts": {
+      "post": {
+        "tags": [
+          "VirtualAccounts"
+        ],
+        "summary": "Provision a persistent NUBAN for a customer.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateVirtualAccountRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateVirtualAccountRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateVirtualAccountRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Provisioned; body carries the NUBAN + reconciliation state.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/VirtualAccountResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VirtualAccountResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VirtualAccountResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A virtual account already exists for this accountRef.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/virtual-accounts/{accountRef}": {
+      "get": {
+        "tags": [
+          "VirtualAccounts"
+        ],
+        "summary": "Fetch a virtual account by its accountRef (details + balance/state).",
+        "parameters": [
+          {
+            "name": "accountRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/VirtualAccountResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VirtualAccountResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VirtualAccountResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No virtual account for this accountRef.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/webhook-endpoints": {
+      "post": {
+        "tags": [
+          "WebhookEndpoints"
+        ],
+        "summary": "Register a callback URL. Returns the signing secret once.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWebhookEndpointRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWebhookEndpointRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWebhookEndpointRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registered; body carries the one-time signing secret.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookEndpointCreatedResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookEndpointCreatedResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookEndpointCreatedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "URL is not a public HTTPS endpoint.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "WebhookEndpoints"
+        ],
+        "summary": "List the account's active webhook endpoints (secrets not returned).",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WebhookEndpointResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WebhookEndpointResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WebhookEndpointResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/webhook-endpoints/{id}": {
+      "delete": {
+        "tags": [
+          "WebhookEndpoints"
+        ],
+        "summary": "Remove (deactivate) an endpoint.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/webhook-endpoints/deliveries": {
+      "get": {
+        "tags": [
+          "WebhookEndpoints"
+        ],
+        "summary": "Recent delivery attempts (observability), optionally filtered by status.",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/WebhookDeliveryStatus"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WebhookDeliveryResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WebhookDeliveryResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WebhookDeliveryResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/webhook-endpoints/deliveries/{id}/replay": {
+      "post": {
+        "tags": [
+          "WebhookEndpoints"
+        ],
+        "summary": "Requeue a failed/dead-lettered delivery for immediate retry.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/webhooks/nomba": {
+      "post": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Nomba webhook receiver (HMAC-SHA256 verified).",
+        "responses": {
+          "200": {
+            "description": "Accepted (processed, duplicate, ignored, or unmatched)."
+          },
+          "401": {
+            "description": "Invalid or missing signature.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/webhooks/nomba": {
+      "post": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Nomba webhook receiver (HMAC-SHA256 verified).",
+        "responses": {
+          "200": {
+            "description": "Accepted (processed, duplicate, ignored, or unmatched)."
+          },
+          "401": {
+            "description": "Invalid or missing signature.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AdminCheckView": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "nullable": true
+          },
+          "outcome": {
+            "type": "string",
+            "nullable": true
+          },
+          "provider": {
+            "type": "string",
+            "nullable": true
+          },
+          "detail": {
+            "type": "string",
+            "nullable": true
+          },
+          "checkedAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminDocumentView": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "reviewStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "downloadUrl": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminLoginRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "password": {
+            "type": "string",
+            "nullable": true
+          },
+          "totpCode": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminLoginResponse": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "nullable": true
+          },
+          "tokenType": {
+            "type": "string",
+            "nullable": true
+          },
+          "expiresIn": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "role": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminOnboardingDetail": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "$ref": "#/components/schemas/AdminOnboardingSummary"
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminCheckView"
+            },
+            "nullable": true
+          },
+          "documents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminDocumentView"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminOnboardingSummary": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tenantEmail": {
+            "type": "string",
+            "nullable": true
+          },
+          "tier": {
+            "type": "string",
+            "nullable": true
+          },
+          "developerKycStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "businessKybStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "submittedAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ApiKeyResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "clientId": {
+            "type": "string",
+            "nullable": true
+          },
+          "clientSecret": {
+            "type": "string",
+            "nullable": true
+          },
+          "mode": {
+            "type": "string",
+            "nullable": true
+          },
+          "label": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastUsedAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false,
+        "description": "ClientSecret is present ONLY in the create response (shown once)."
+      },
+      "BankLookupRequest": {
+        "type": "object",
+        "properties": {
+          "accountNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "bankCode": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "BankLookupResponse": {
+        "type": "object",
+        "properties": {
+          "accountName": {
+            "type": "string",
+            "nullable": true
+          },
+          "accountNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "bankCode": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CheckoutSessionResponse": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "nullable": true
+          },
+          "snapshotUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "streamUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "expiresAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/CheckoutSnapshotResponse"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CheckoutSnapshotResponse": {
+        "type": "object",
+        "properties": {
+          "accountRef": {
+            "type": "string",
+            "nullable": true
+          },
+          "accountNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "bankName": {
+            "type": "string",
+            "nullable": true
+          },
+          "accountName": {
+            "type": "string",
+            "nullable": true
+          },
+          "paymentState": {
+            "type": "string",
+            "nullable": true
+          },
+          "amountPaidKobo": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "expectedAmountKobo": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateAdminRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "password": {
+            "type": "string",
+            "nullable": true
+          },
+          "role": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateApiKeyRequest": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "nullable": true
+          },
+          "mode": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateCheckoutSessionRequest": {
+        "type": "object",
+        "properties": {
+          "accountRef": {
+            "type": "string",
+            "nullable": true
+          },
+          "ttlSeconds": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateRuleRequest": {
+        "type": "object",
+        "properties": {
+          "trigger": {
+            "type": "string",
+            "nullable": true
+          },
+          "action": {
+            "type": "string",
+            "nullable": true
+          },
+          "thresholdKobo": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "minRiskScore": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "priority": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateSubMerchantRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "reference": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateTransferRequest": {
+        "type": "object",
+        "properties": {
+          "merchantTxRef": {
+            "type": "string",
+            "nullable": true
+          },
+          "amountKobo": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "accountNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "bankCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "narration": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateVirtualAccountRequest": {
+        "type": "object",
+        "properties": {
+          "accountRef": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "expectedAmountKobo": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "expiryDateUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateWebhookEndpointRequest": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DeveloperProfileResponse": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "emailVerified": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false,
+        "description": "The current developer account's profile (GET /developers/me)."
+      },
+      "EscrowHoldRequest": {
+        "type": "object",
+        "properties": {
+          "releaseCondition": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EscrowHoldResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "accountRef": {
+            "type": "string",
+            "nullable": true
+          },
+          "amountKobo": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "state": {
+            "type": "string",
+            "nullable": true
+          },
+          "releaseCondition": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "FailedSettlementView": {
+        "type": "object",
+        "properties": {
+          "virtualAccountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tenantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "accountRef": {
+            "type": "string",
+            "nullable": true
+          },
+          "netKobo": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "failureReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "failedAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ForgotPasswordRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "InsightsResponse": {
+        "type": "object",
+        "properties": {
+          "virtualAccounts": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "deposits": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCollectedKobo": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "expectedKobo": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "outstandingDeficitKobo": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "collectionRatePct": {
+            "type": "number",
+            "format": "double"
+          },
+          "reconciled": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "underpaid": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "overpaid": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pendingReview": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "highRisk": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "fullyPaidAccounts": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "partiallyPaidAccounts": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "password": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "MfaEnrollResponse": {
+        "type": "object",
+        "properties": {
+          "otpAuthUri": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "OnboardingStatusResponse": {
+        "type": "object",
+        "properties": {
+          "tier": {
+            "type": "string",
+            "nullable": true
+          },
+          "developerKycStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "businessKybStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "canIssueLiveKeys": {
+            "type": "boolean"
+          },
+          "submittedAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "decidedAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "decisionReason": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "The tenant's onboarding state. Sandbox on signup; Live after KYC + KYB approval."
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "detail": {
+            "type": "string",
+            "nullable": true
+          },
+          "instance": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": { }
+      },
+      "ReconSummary": {
+        "type": "object",
+        "properties": {
+          "review": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unknown": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "overpaid": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "underpaid": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "highRisk": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "reversals": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ReconTransactionView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tenantId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "virtualAccountId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "reference": {
+            "type": "string",
+            "nullable": true
+          },
+          "amountKobo": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "netCreditKobo": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "reconciliation": {
+            "type": "string",
+            "nullable": true
+          },
+          "reason": {
+            "type": "string",
+            "nullable": true
+          },
+          "riskScore": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "transferName": {
+            "type": "string",
+            "nullable": true
+          },
+          "occurredAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ReconciliationStatus": {
+        "enum": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "RegisterDeveloperRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "password": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "RegisterResponse": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "emailVerified": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Register response — no token; the account must verify its email first."
+      },
+      "ResetPasswordRequest": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "nullable": true
+          },
+          "newPassword": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ReviewActionRequest": {
+        "type": "object",
+        "properties": {
+          "track": {
+            "type": "string",
+            "nullable": true
+          },
+          "reason": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Admin review action targeting a track; Reason required for reject / request-info."
+      },
+      "RuleResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "trigger": {
+            "type": "string",
+            "nullable": true
+          },
+          "action": {
+            "type": "string",
+            "nullable": true
+          },
+          "thresholdKobo": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "minRiskScore": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "priority": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SessionResponse": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "emailVerified": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Login/refresh/OAuth response. Tokens are NOT here — they are set as HttpOnly, Secure\ncookies (xnt_access, xnt_refresh). The body only carries who is logged in."
+      },
+      "SetSplitsRequest": {
+        "type": "object",
+        "properties": {
+          "splits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SplitLegRequest"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SettlementConfigResponse": {
+        "type": "object",
+        "properties": {
+          "settlementAccountNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "settlementBankCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "settlementAccountName": {
+            "type": "string",
+            "nullable": true
+          },
+          "autoSettle": {
+            "type": "boolean"
+          },
+          "minPayoutKobo": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "canAutoSettle": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SimulateDepositRequest": {
+        "type": "object",
+        "properties": {
+          "accountRef": {
+            "type": "string",
+            "nullable": true
+          },
+          "amountKobo": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "senderName": {
+            "type": "string",
+            "nullable": true
+          },
+          "reversal": {
+            "type": "boolean",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SimulatedDepositResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "reference": {
+            "type": "string",
+            "nullable": true
+          },
+          "reconciliation": {
+            "type": "string",
+            "nullable": true
+          },
+          "paymentState": {
+            "type": "string",
+            "nullable": true
+          },
+          "reason": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SplitLegRequest": {
+        "type": "object",
+        "properties": {
+          "beneficiaryName": {
+            "type": "string",
+            "nullable": true
+          },
+          "accountNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "bankCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "basis": {
+            "type": "string",
+            "nullable": true
+          },
+          "shareBps": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "flatKobo": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "priority": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SplitLegResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "beneficiaryName": {
+            "type": "string",
+            "nullable": true
+          },
+          "accountNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "bankCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "basis": {
+            "type": "string",
+            "nullable": true
+          },
+          "shareBps": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "flatKobo": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "priority": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SubMerchantResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "reference": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SubmitBusinessKybRequest": {
+        "type": "object",
+        "properties": {
+          "legalName": {
+            "type": "string",
+            "nullable": true
+          },
+          "registrationNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "businessType": {
+            "type": "string",
+            "nullable": true
+          },
+          "industry": {
+            "type": "string",
+            "nullable": true
+          },
+          "country": {
+            "type": "string",
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "contactCountryCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "contactPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "website": {
+            "type": "string",
+            "nullable": true
+          },
+          "settlementBankName": {
+            "type": "string",
+            "nullable": true
+          },
+          "settlementBankCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "settlementAccountName": {
+            "type": "string",
+            "nullable": true
+          },
+          "settlementAccountNumber": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Business KYB submission (business info + contact + settlement account)."
+      },
+      "SubmitDeveloperKycRequest": {
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": "string",
+            "nullable": true
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "format": "date"
+          },
+          "country": {
+            "type": "string",
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "idType": {
+            "type": "string",
+            "nullable": true
+          },
+          "idNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "bankName": {
+            "type": "string",
+            "nullable": true
+          },
+          "bankCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "bankAccountName": {
+            "type": "string",
+            "nullable": true
+          },
+          "bankAccountNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "portfolioUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "projectDescription": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Developer KYC submission (personal identity + regulatory id + bank + profile)."
+      },
+      "SubmitOnboardingRequest": {
+        "type": "object",
+        "properties": {
+          "attestationAccepted": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Final attestation + submit (moves KYB to Under Review)."
+      },
+      "TokenRequest": {
+        "type": "object",
+        "properties": {
+          "clientId": {
+            "type": "string",
+            "nullable": true
+          },
+          "clientSecret": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "TokenResponse": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "nullable": true
+          },
+          "tokenType": {
+            "type": "string",
+            "nullable": true
+          },
+          "expiresIn": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TransactionResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reference": {
+            "type": "string",
+            "nullable": true
+          },
+          "virtualAccountId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "amountKobo": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "feeKobo": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "netCreditKobo": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "reconciliation": {
+            "type": "string",
+            "nullable": true
+          },
+          "reason": {
+            "type": "string",
+            "nullable": true
+          },
+          "riskScore": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "transferName": {
+            "type": "string",
+            "nullable": true
+          },
+          "occurredAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reconciledAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "TransactionStatus": {
+        "enum": [
+          1,
+          2,
+          3
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "TransferResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "merchantTxRef": {
+            "type": "string",
+            "nullable": true
+          },
+          "amountKobo": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "recipientAccountNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "recipientBankCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "providerReference": {
+            "type": "string",
+            "nullable": true
+          },
+          "failureReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateSettlementRequest": {
+        "type": "object",
+        "properties": {
+          "settlementAccountNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "settlementBankCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "settlementAccountName": {
+            "type": "string",
+            "nullable": true
+          },
+          "autoSettle": {
+            "type": "boolean"
+          },
+          "minPayoutKobo": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Update the tenant's settlement bank account + auto-settle preferences."
+      },
+      "VirtualAccountResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "accountRef": {
+            "type": "string",
+            "nullable": true
+          },
+          "accountNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "bankName": {
+            "type": "string",
+            "nullable": true
+          },
+          "accountName": {
+            "type": "string",
+            "nullable": true
+          },
+          "expectedAmountKobo": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "amountPaidKobo": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "deficitKobo": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "overpaymentKobo": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "paymentState": {
+            "type": "string",
+            "nullable": true
+          },
+          "expiryDateUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "WebhookDeliveryResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "endpointId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "eventType": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "attempts": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "nextAttemptAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "deliveredAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "lastStatusCode": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "lastError": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "WebhookDeliveryStatus": {
+        "enum": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "WebhookEndpointCreatedResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "url": {
+            "type": "string",
+            "nullable": true
+          },
+          "signingSecret": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Signing secret is present only in the create response (shown once)."
+      },
+      "WebhookEndpointResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "url": {
+            "type": "string",
+            "nullable": true
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "securitySchemes": {
+      "Bearer": {
+        "type": "http",
+        "description": "Paste the JWT from POST /api/v1/auth/token.",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "security": [
+    { }
+  ],
+  "tags": [
+    {
+      "name": "AdminAuth",
+      "description": "Admin authentication (email + password + TOTP MFA). Issues a bearer admin token."
+    },
+    {
+      "name": "AdminManagement",
+      "description": "Admin management: SuperAdmin creates admins; any admin enrolls their own MFA."
+    },
+    {
+      "name": "AdminOnboarding",
+      "description": "Admin onboarding/KYC review (cross-tenant, audited). Any admin."
+    },
+    {
+      "name": "AdminReconciliation",
+      "description": "Admin reconciliation console — exception buckets + failed-settlement retry (audited)."
+    },
+    {
+      "name": "AgentDiscovery",
+      "description": "Agent-facing discovery (agent layer). A compact, LLM-readable capability map so a developer can\npoint their AI agent at Xental and have it wire the integration. The full contract is the\nOpenAPI document at `/swagger/v1/swagger.json`; this is the orientation on top of it."
+    },
+    {
+      "name": "ApiKeys",
+      "description": "API key management (the dashboard plane). Requires a `dashboard`-scoped token\n(from `/developers/login`). Keys come in `test` and `live` modes; the\nclient secret is returned once at creation and never again."
+    },
+    {
+      "name": "Auth"
+    },
+    {
+      "name": "Checkout",
+      "description": "Live Checkout (differentiator). An integrator (API plane) mints a session token scoped to one\nvirtual account, then hands the payer the snapshot/stream URLs. The snapshot + SSE stream are\n<b>anonymous</b> — a payer watches \"Payment received ✓\" land without an account — and expose\nonly payment state, never PII. Strictly read-only against the money path."
+    },
+    {
+      "name": "Developers",
+      "description": "Developer account lifecycle (the dashboard plane): registration, email verification,\nlogin (verified accounts only), session refresh, logout, password reset, and profile.\nSessions are cookie-based: login sets HttpOnly+Secure `xnt_access` (short-lived)\nand `xnt_refresh` (rotating) cookies — tokens are never returned in the body.\nSensitive endpoints are rate-limited."
+    },
+    {
+      "name": "Health"
+    },
+    {
+      "name": "Insights",
+      "description": "Reconciliation + collections analytics for the account dashboard (dashboard plane)."
+    },
+    {
+      "name": "OAuth",
+      "description": "Social login (the dashboard plane). Start a login to be redirected to the provider;\nthe provider redirects back to the callback, which sets the session cookies and\nforwards the browser to the app. Supported providers: `google`, `github`."
+    },
+    {
+      "name": "Onboarding",
+      "description": "KYC/KYB onboarding for the developer account (dashboard plane). Signup already grants Sandbox\n(test keys); this is the path to Live. Submission + document endpoints are added in later phases."
+    },
+    {
+      "name": "Rules",
+      "description": "Money Rules (dashboard plane, Feature 3): declarative if-this-then-that reactions to reconciled\ndeposits (overpaid → hold, high-risk → hold, any → notify). Evaluated post-commit by the\nreconciliation engine; they never change the verdict. Configuration only — nothing here moves money."
+    },
+    {
+      "name": "Sandbox",
+      "description": "Sandbox tools (agent layer). Lets a developer or their AI agent verify an integration\nend-to-end with zero money: simulate a bank transfer into a virtual account and watch it\nreconcile through the real engine (splits + money rules included). Test-mode API keys only."
+    },
+    {
+      "name": "Settings",
+      "description": "Tenant settlement preferences (dashboard plane). When auto-settle is on and a bank account is\nconfigured, fully-paid virtual accounts are swept to that account by the settlement worker."
+    },
+    {
+      "name": "Settlements",
+      "description": "Escrow control over a virtual account's settlement (API plane, Feature 1). Holding parks the\nfunds so the worker will not sweep/split them; releasing lets the next sweep proceed."
+    },
+    {
+      "name": "SettlementSplits",
+      "description": "Split-settlement plan (dashboard plane, Feature 1). When legs are configured, the settlement\nworker fans a fully-paid account's net out across them instead of a single sweep. An empty list\nclears the plan (back to single sweep). Pure configuration — nothing here moves money."
+    },
+    {
+      "name": "SubMerchants",
+      "description": "Sub-merchants (the API plane). Requires an `api`-scoped token (from\n`/auth/token`). Sub-merchants are internal Xental records used to segment a\ndeveloper's own customers/branches — they are not created on any external provider."
+    },
+    {
+      "name": "Transactions",
+      "description": "The tenant's deposit ledger / statement (API plane). Filterable audit view of reconciled\ninflows, each with its reconciliation status, internal reason flag, fees, and risk score."
+    },
+    {
+      "name": "Transfers",
+      "description": "Outbound bank transfers / settlement payouts (API plane). Transfers are idempotent on\n`merchantTxRef` — re-submitting the same ref returns the existing transfer."
+    },
+    {
+      "name": "VirtualAccounts",
+      "description": "Persistent virtual accounts (NUBANs) — the API plane. Requires an `api`-scoped token.\nProvisioning maps a developer-supplied `accountRef` to a Nomba NUBAN and (optionally)\nan expected amount used to reconcile inflows."
+    },
+    {
+      "name": "WebhookEndpoints",
+      "description": "Manage outbound webhook endpoints (dashboard plane). Xental delivers enriched, HMAC-signed,\npre-reconciled events to these URLs with retries + dead-letter. URLs are SSRF-guarded; the\nper-endpoint signing secret is shown once and stored encrypted."
+    },
+    {
+      "name": "Webhooks",
+      "description": "Inbound provider webhooks. Nomba posts payment events here; the request is HMAC-verified,\ndeduped by request id, matched to a virtual account, and reconciled. Anonymous (verified\nby signature, not a token) and exempt from rate limiting."
+    }
+  ]
+}
