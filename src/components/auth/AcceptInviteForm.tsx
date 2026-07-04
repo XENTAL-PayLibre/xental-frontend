@@ -25,12 +25,18 @@ const inputStyles =
   'h-11 text-muted-foreground text-base placeholder:text-base placeholder:text-muted px-4';
 const labelStyles = 'text-muted-foreground text-sm';
 
+// Mirror the backend PasswordPolicy so weak passwords are caught with a clear message here,
+// rather than round-tripping and surfacing a generic error.
 const AcceptInviteSchema = z
   .object({
     password: z
       .string()
       .min(12, 'Use at least 12 characters.')
-      .max(128, 'Password is too long.'),
+      .max(128, 'Password is too long.')
+      .regex(/[A-Z]/, 'Add an uppercase letter.')
+      .regex(/[a-z]/, 'Add a lowercase letter.')
+      .regex(/[0-9]/, 'Add a number.')
+      .regex(/[^A-Za-z0-9]/, 'Add a special character.'),
     confirmPassword: z.string(),
   })
   .refine((v) => v.password === v.confirmPassword, {
@@ -128,6 +134,9 @@ const AcceptInviteForm = () => {
                   </div>
                 </FormControl>
                 <FormMessage />
+                <p className='text-xs text-muted'>
+                  At least 12 characters, with an uppercase and lowercase letter, a number, and a special character.
+                </p>
               </FormItem>
             )}
           />

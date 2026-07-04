@@ -1,11 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Pencil, Plus, Trash2, ArrowLeft } from 'lucide-react';
+import { Pencil, Plus, Trash2, ArrowLeft, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { useTeam, useInviteTeamMember, useUpdateTeamMember, useRemoveTeamMember, type TeamMember, type TeamRole } from '@/api/team';
+import { useTeam, useInviteTeamMember, useUpdateTeamMember, useRemoveTeamMember, useResendInvite, type TeamMember, type TeamRole } from '@/api/team';
 
 const ROLES: TeamRole[] = ['Admin', 'Employee', 'Developer'];
 const fmtDate = (d: string) => new Date(d).toLocaleDateString('en-CA'); // YYYY-MM-DD
@@ -17,6 +16,7 @@ export default function TeamManager() {
   const invite = useInviteTeamMember();
   const update = useUpdateTeamMember();
   const remove = useRemoveTeamMember();
+  const resend = useResendInvite();
 
   const [form, setForm] = useState<FormState | null>(null); // null = list view
 
@@ -116,6 +116,9 @@ export default function TeamManager() {
                     <td className='px-5 py-3 text-xental-text-primary-500'>{fmtDate(m.createdAtUtc)}</td>
                     <td className='px-5 py-3'>
                       <div className='flex justify-end gap-1'>
+                        {m.status === 'Invited' && (
+                          <button onClick={() => resend.mutate(m.id)} disabled={resend.isPending} title='Resend invite' className='rounded-md p-1.5 text-xental-text-primary-400 hover:bg-xental-bg hover:text-action-blue disabled:opacity-50'><Send className='h-3.5 w-3.5' /></button>
+                        )}
                         <button onClick={() => startEdit(m)} title='Edit' className='rounded-md p-1.5 text-xental-text-primary-400 hover:bg-xental-bg hover:text-action-blue'><Pencil className='h-3.5 w-3.5' /></button>
                         <button onClick={() => remove.mutate(m.id)} title='Remove' className='rounded-md p-1.5 text-xental-text-primary-400 hover:bg-failed-surface hover:text-failed'><Trash2 className='h-3.5 w-3.5' /></button>
                       </div>
@@ -134,6 +137,9 @@ export default function TeamManager() {
                     <p className='mt-1 text-xs text-xental-text-primary-500'>{m.role}{m.status === 'Invited' && ' · Pending'} · {fmtDate(m.createdAtUtc)}</p>
                   </div>
                   <div className='flex shrink-0 gap-1'>
+                    {m.status === 'Invited' && (
+                      <button onClick={() => resend.mutate(m.id)} disabled={resend.isPending} className='rounded-md p-1.5 text-xental-text-primary-400 hover:bg-xental-bg disabled:opacity-50'><Send className='h-3.5 w-3.5' /></button>
+                    )}
                     <button onClick={() => startEdit(m)} className='rounded-md p-1.5 text-xental-text-primary-400 hover:bg-xental-bg'><Pencil className='h-3.5 w-3.5' /></button>
                     <button onClick={() => remove.mutate(m.id)} className='rounded-md p-1.5 text-xental-text-primary-400 hover:bg-failed-surface hover:text-failed'><Trash2 className='h-3.5 w-3.5' /></button>
                   </div>

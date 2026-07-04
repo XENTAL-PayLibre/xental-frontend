@@ -32,6 +32,7 @@ export const API_ENDPOINTS = {
   TEAM: {
     BASE:   '/team',
     ONE:    (id: string) => `/team/${id}`,
+    RESEND: (id: string) => `/team/${id}/resend`,
     ACCEPT: '/team/accept',
   },
 } as const;

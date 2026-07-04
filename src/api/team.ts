@@ -82,14 +82,31 @@ export function useRemoveTeamMember() {
   });
 }
 
+/** Re-send a pending member's invitation (rotates the token; older links stop working). */
+export function useResendInvite() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationKey: ['team', 'resend'],
+    mutationFn: async (id: string) => {
+      const res = await postRequest<TeamMember, Record<string, never>>({ url: API_ENDPOINTS.TEAM.RESEND(id), payload: {} });
+      return res.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: TEAM_QUERY });
+      toast.success('Invitation re-sent');
+    },
+    onError: (error) => displayError(error, 'Could not re-send the invitation.'),
+  });
+}
+
 /** Anonymous: accept an invite by setting a password. */
 export function useAcceptInvite() {
   return useMutation({
     mutationKey: ['team', 'accept'],
     mutationFn: (payload: { token: string; password: string }) =>
       postRequest<void, { token: string; password: string }>({ url: API_ENDPOINTS.TEAM.ACCEPT, payload }),
-    onError: (error) => displayError(error, 'This invitation is invalid or has expired.', {
-      400: 'This invitation is invalid or has expired.',
-    }),
+    // Surface the backend's actual reason (e.g. a weak-password message vs. an expired token) —
+    // do NOT collapse every 400 into "invitation expired", which hides password errors.
+    onError: (error) => displayError(error, 'We could not accept this invitation. Please try again.'),
   });
 }
