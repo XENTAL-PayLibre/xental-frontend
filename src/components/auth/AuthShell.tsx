@@ -1,5 +1,6 @@
 import React from 'react';
 import Image from 'next/image';
+import brandCover from '../../../public/images/auth/brand-cover.png';
 
 interface AuthShellProps {
   left?: React.ReactNode;
@@ -12,10 +13,10 @@ export default function AuthShell({ left, right }: AuthShellProps) {
       {/* ── Left: Brand cover ───────────────────────────────── */}
       <div className='hidden lg:block relative overflow-hidden rounded-[24px]'>
         <Image
-          src='/images/auth/brand-cover.png'
+          src={brandCover}
           alt='Brand cover'
           fill
-          unoptimized
+          placeholder='blur'
           className='object-cover'
           priority
         />

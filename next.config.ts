@@ -7,6 +7,15 @@ const nextConfig: NextConfig = {
   // deploy; re-enable once the frontend compiles clean.
   typescript: { ignoreBuildErrors: true },
   eslint: { ignoreDuringBuilds: true },
+
+  async rewrites() {
+    return [
+      {
+        source: '/api/v1/:path*',
+        destination: `${process.env.NEXT_PUBLIC_API_URL}/api/v1/:path*`, // Proxy to Backend
+      },
+    ];
+  },
 };
 
 export default nextConfig;

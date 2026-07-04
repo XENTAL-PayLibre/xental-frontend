@@ -1,7 +1,9 @@
 /** Browser API base URL. Routes through local proxy in dev so cookies work on localhost. */
 export function getApiBaseUrl(): string {
-  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-    return '/api/proxy/api/v1';
+  // In local development, use Next.js Rewrites (configured in next.config.ts) 
+  // to act as a proxy. This solves all CORS and cross-domain cookie issues!
+  if (process.env.NODE_ENV === 'development') {
+    return '/api/v1';
   }
   const raw = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
   if (!raw) {
