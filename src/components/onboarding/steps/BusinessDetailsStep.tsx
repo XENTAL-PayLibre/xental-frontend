@@ -76,6 +76,7 @@ interface Props {
   data: BusinessDetailsData;
   onChange: (data: BusinessDetailsData) => void;
   onNext: () => void;
+  onBack: () => void;
   submitted: boolean;
 }
 
@@ -155,7 +156,7 @@ const REQUIRED: (keyof BusinessDetailsData)[] = [
   'businessName', 'registrationNumber', 'businessType', 'industry', 'country', 'businessAddress', 'phoneNumber',
 ];
 
-export default function BusinessDetailsStep({ data, onChange, onNext, submitted }: Props) {
+export default function BusinessDetailsStep({ data, onChange, onNext, onBack, submitted }: Props) {
   const set = (key: keyof BusinessDetailsData) => (value: string) =>
     onChange({ ...data, [key]: value });
 
@@ -282,7 +283,7 @@ export default function BusinessDetailsStep({ data, onChange, onNext, submitted 
       </p>
 
       <div className='flex items-center justify-between mt-6'>
-        <button className='text-sm text-xental-text-primary-500 hover:text-foreground transition-colors'>
+        <button onClick={onBack} className='text-sm text-xental-text-primary-500 hover:text-foreground transition-colors'>
           Back
         </button>
         <Button onClick={onNext} className='px-8' disabled={!canProceed}>

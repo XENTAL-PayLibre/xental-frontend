@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Logo from '@/components/global/logo';
 import OnboardingStepper from '@/components/onboarding/OnboardingStepper';
 import BusinessDetailsStep, {
@@ -64,6 +65,7 @@ const initialAccountDetails: AccountDetailsData = {
 const LAST_STEP = 5;
 
 export default function OnboardingPage() {
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
   const [done, setDone] = useState(false);
@@ -174,6 +176,7 @@ export default function OnboardingPage() {
             data={businessDetails}
             onChange={setBusinessDetails}
             onNext={handleNext}
+            onBack={() => router.push('/dashboard')}
             submitted={submitted}
           />
         )}
