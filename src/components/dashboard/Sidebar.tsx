@@ -10,10 +10,13 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   Settings,
+  X,
   LogOut,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { postRequest } from '@/lib/http';
+import { clearAuthCookies } from '@/lib/get-token';
 import { cn } from '@/lib/utils';
-import { useLogout } from '@/api/auth';
 
 const NAV_ITEMS = [
   { label: 'Home', href: '/dashboard', icon: Home },
@@ -26,17 +29,23 @@ const NAV_ITEMS = [
 
 export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
-  const { mutate: logout, isPending: loggingOut } = useLogout();
+  const router = useRouter();
 
-  const handleLogout = () => {
-    onNavigate?.();
-    logout();
-  };
+  async function handleLogout() {
+    try {
+      await postRequest({ url: '/developers/logout', payload: {} });
+    } catch {
+      // ignore — clear client state regardless
+    }
+    clearAuthCookies();
+    if (typeof window !== 'undefined') localStorage.removeItem('has_refresh_token');
+    router.push('/login');
+  }
 
   return (
-    <aside className='flex h-full w-[220px] shrink-0 flex-col border-r border-stroke-2 bg-white px-3 py-5'>
-      {/* Logo */}
-      <div className='px-2 mb-6'>
+    <aside className='w-[220px] shrink-0 flex flex-col h-screen bg-white border-r border-stroke-2 px-3 py-5'>
+      {/* Logo + mobile close */}
+      <div className='px-2 mb-6 flex items-center justify-between'>
         <Image
           src='/images/full-logo.svg'
           alt='Xental'
@@ -44,6 +53,11 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           height={32}
           className='object-contain'
         />
+        {onNavigate && (
+          <button onClick={onNavigate} className='lg:hidden p-1 rounded hover:bg-xental-bg'>
+            <X className='w-4 h-4 text-xental-text-primary-400' />
+          </button>
+        )}
       </div>
 
       {/* Nav */}
@@ -73,14 +87,13 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         })}
       </nav>
 
-      {/* Log out */}
+      {/* Logout */}
       <button
         onClick={handleLogout}
-        disabled={loggingOut}
-        className='flex items-center gap-2.5 px-2 py-2 rounded-lg text-sm text-xental-text-primary-500 hover:bg-failed-surface hover:text-failed transition-colors disabled:opacity-60 mb-2'
+        className='flex items-center gap-2.5 px-2 py-2 rounded-lg text-sm text-xental-text-primary-500 hover:bg-red-50 hover:text-destructive transition-colors w-full mb-2'
       >
         <LogOut className='w-4 h-4 shrink-0' />
-        {loggingOut ? 'Signing out…' : 'Log out'}
+        Log out
       </button>
 
       {/* PayLibre card */}

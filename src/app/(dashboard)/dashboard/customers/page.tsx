@@ -6,36 +6,11 @@ import { Download, MoreVertical, Search, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import FilterDropdown from '@/components/dashboard/FilterDropdown';
-import { cn } from '@/lib/utils';
+import { cn, formatDate } from '@/lib/utils';
+import { useSubMerchants } from '@/api/dashboard';
+import type { SubMerchantResponse } from '@/api/types/dashboard';
 
-type CustomerStatus = 'Active' | 'Inactive';
-
-interface Customer {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  dedicatedAccount: string;
-  dateCreated: string;
-  status: CustomerStatus;
-}
-
-const ALL_CUSTOMERS: Customer[] = [
-  { id: '1', name: 'Chinonso Okeke', email: 'chinonso@mail.com', phone: '+234 803 456 7890', dedicatedAccount: '8061782007', dateCreated: '30-04-2026', status: 'Active' },
-  { id: '2', name: 'Amara Nwosu', email: 'amara@mail.com', phone: '+234 802 345 6789', dedicatedAccount: '2375849108', dateCreated: '01-05-2026', status: 'Active' },
-  { id: '3', name: 'Emeka Obi', email: 'emeka@mail.com', phone: '+234 901 234 5678', dedicatedAccount: '8061782008', dateCreated: '02-05-2026', status: 'Inactive' },
-  { id: '4', name: 'Fatima Bello', email: 'fatima@mail.com', phone: '+234 800 123 4567', dedicatedAccount: '4928375610', dateCreated: '03-05-2026', status: 'Active' },
-  { id: '5', name: 'Tobi Adeyemi', email: 'tobi@mail.com', phone: '+234 809 876 5432', dedicatedAccount: '7312456890', dateCreated: '05-05-2026', status: 'Active' },
-  { id: '6', name: 'Grace Eze', email: 'grace@mail.com', phone: '+234 806 543 2109', dedicatedAccount: '2375849109', dateCreated: '06-05-2026', status: 'Active' },
-  { id: '7', name: 'Uche Nnamdi', email: 'uche@mail.com', phone: '+234 812 678 9012', dedicatedAccount: '9087654321', dateCreated: '07-05-2026', status: 'Inactive' },
-  { id: '8', name: 'Kemi Afolabi', email: 'kemi@mail.com', phone: '+234 815 901 2345', dedicatedAccount: '8642097531', dateCreated: '08-05-2026', status: 'Active' },
-  { id: '9', name: 'Dayo Ibrahim', email: 'dayo@mail.com', phone: '+234 703 234 5678', dedicatedAccount: '6789012345', dateCreated: '09-05-2026', status: 'Active' },
-  { id: '10', name: 'Ngozi Okonkwo', email: 'ngozi@mail.com', phone: '+234 706 789 0123', dedicatedAccount: '9067123458', dateCreated: '10-05-2026', status: 'Active' },
-  { id: '11', name: 'Bola Tinubu', email: 'bola@mail.com', phone: '+234 801 111 2222', dedicatedAccount: '1234567890', dateCreated: '11-05-2026', status: 'Active' },
-  { id: '12', name: 'Chidi Eze', email: 'chidi@mail.com', phone: '+234 802 222 3333', dedicatedAccount: '2345678901', dateCreated: '12-05-2026', status: 'Inactive' },
-];
-
-const STATUS_STYLES: Record<CustomerStatus, string> = {
+const STATUS_STYLES: Record<string, string> = {
   Active: 'text-success',
   Inactive: 'text-xental-text-primary-400',
 };
@@ -47,16 +22,17 @@ export default function CustomersPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
 
+  const { data: subMerchants = [], isLoading } = useSubMerchants();
+
   const filtered = useMemo(() => {
-    return ALL_CUSTOMERS.filter((c) => {
+    return subMerchants.filter((c: SubMerchantResponse) => {
       const matchSearch = !search ||
-        c.name.toLowerCase().includes(search.toLowerCase()) ||
-        c.dedicatedAccount.includes(search) ||
-        c.email.toLowerCase().includes(search.toLowerCase());
+        (c.name ?? '').toLowerCase().includes(search.toLowerCase()) ||
+        (c.reference ?? '').toLowerCase().includes(search.toLowerCase());
       const matchStatus = !statusFilter || c.status === statusFilter;
       return matchSearch && matchStatus;
     });
-  }, [search, statusFilter]);
+  }, [subMerchants, search, statusFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -74,10 +50,10 @@ export default function CustomersPage() {
           <p className='text-sm text-xental-text-primary-400 mt-0.5'>Manage your customers and their dedicated accounts</p>
         </div>
         <div className='flex items-center gap-2'>
-          <Button size='sm' variant='outline' className='gap-1.5' onClick={() => toast.info('Export coming soon — wire to API first')}>
+          <Button size='sm' variant='outline' className='gap-1.5' onClick={() => toast.info('Export coming soon')}>
             <Download className='w-3.5 h-3.5' /> Export
           </Button>
-          <Button size='sm' className='gap-1.5' onClick={() => toast.info('Add customer — coming once API is wired')}>
+          <Button size='sm' className='gap-1.5' onClick={() => toast.info('Add customer coming soon')}>
             <UserPlus className='w-3.5 h-3.5' /> Add customer
           </Button>
         </div>
@@ -117,29 +93,37 @@ export default function CustomersPage() {
               </tr>
             </thead>
             <tbody>
-              {paginated.length === 0 ? (
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} className='border-b border-stroke-2'>
+                    {Array.from({ length: 7 }).map((__, j) => (
+                      <td key={j} className='px-4 py-3'><div className='h-3 bg-xental-bg rounded animate-pulse w-20' /></td>
+                    ))}
+                  </tr>
+                ))
+              ) : paginated.length === 0 ? (
                 <tr>
                   <td colSpan={7} className='px-4 py-10 text-center text-xental-text-primary-400'>No customers found</td>
                 </tr>
-              ) : paginated.map((c) => (
+              ) : (paginated as SubMerchantResponse[]).map((c) => (
                 <tr key={c.id} className='border-b border-stroke-2 last:border-0 hover:bg-xental-bg transition-colors'>
                   <td className='px-4 py-3'><input type='checkbox' className='accent-action-blue' /></td>
                   <td className='px-4 py-3'>
                     <Link href={`/dashboard/customers/${c.id}`} className='flex items-center gap-2 hover:opacity-80'>
                       <div className='w-6 h-6 rounded-full bg-xental-blue-100 flex items-center justify-center text-[10px] font-bold text-action-blue shrink-0'>
-                        {c.name.charAt(0)}
+                        {(c.name ?? 'C').charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <p className='font-medium text-foreground'>{c.name}</p>
-                        <p className='text-xental-text-primary-400'>{c.email}</p>
+                        <p className='font-medium text-foreground'>{c.name ?? '—'}</p>
+                        <p className='text-xental-text-primary-400 font-mono text-[10px]'>{c.reference ?? '—'}</p>
                       </div>
                     </Link>
                   </td>
-                  <td className='px-4 py-3 text-xental-text-primary-500'>{c.phone}</td>
-                  <td className='px-4 py-3 text-xental-text-primary-500 font-mono'>{c.dedicatedAccount}</td>
-                  <td className='px-4 py-3 text-xental-text-primary-500'>{c.dateCreated}</td>
+                  <td className='px-4 py-3 text-xental-text-primary-500'>—</td>
+                  <td className='px-4 py-3 text-xental-text-primary-500 font-mono'>{c.reference ?? '—'}</td>
+                  <td className='px-4 py-3 text-xental-text-primary-500'>{formatDate(c.createdAtUtc)}</td>
                   <td className='px-4 py-3'>
-                    <span className={cn('font-medium', STATUS_STYLES[c.status])}>{c.status}</span>
+                    <span className={cn('font-medium', STATUS_STYLES[c.status ?? ''] ?? 'text-xental-text-primary-400')}>{c.status ?? '—'}</span>
                   </td>
                   <td className='px-4 py-3'>
                     <MoreVertical className='w-3.5 h-3.5 text-xental-text-primary-400 cursor-pointer' />

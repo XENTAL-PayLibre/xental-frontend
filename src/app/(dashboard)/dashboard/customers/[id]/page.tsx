@@ -74,7 +74,7 @@ export default function CustomerDetailPage() {
       </div>
 
       {tab === 'Overview' && (
-        <div className='grid grid-cols-2 gap-4'>
+        <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
           <div className='bg-white rounded-xl border border-stroke-2 p-4'>
             <h3 className='text-xs font-semibold text-foreground mb-2'>Customer Details</h3>
             <DetailRow label='Full name' value='Chinonso Okeke' />
