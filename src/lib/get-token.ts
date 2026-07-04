@@ -4,8 +4,8 @@ const cookies = new Cookies();
 
 // ── Cookie key names ───────────────────────────────────────────────────────
 export const COOKIE_KEYS = {
-  access_token:  'access_token',
-  refresh_token: 'refresh_token',
+  access_token:  'xnt_access',
+  refresh_token: 'xnt_refresh',
   has_refresh:   'has_refresh_token',
   user_profile:  'user_profile',
 } as const;
