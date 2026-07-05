@@ -6,7 +6,14 @@ import { toast } from 'sonner';
 import { postRequest, resetAuthRefreshState } from '@/lib/http';
 import { markSession, clearAuthCookies } from '@/lib/get-token';
 import { API_ENDPOINTS } from './api-endpoints';
-import type { RegisterPayload, RegisterResponse, LoginPayload, LoginResponse } from './types/auth';
+import type {
+  RegisterPayload,
+  RegisterResponse,
+  LoginPayload,
+  LoginResponse,
+  LoginChallengeResponse,
+  VerifyOtpPayload,
+} from './types/auth';
 
 // ── Shared helpers ─────────────────────────────────────────────────────────
 
@@ -67,15 +74,43 @@ export function useSignup() {
   });
 }
 
-// ── useLogin ───────────────────────────────────────────────────────────────
+// ── useLogin (step 1: password → emailed OTP) ────────────────────────────────
 export function useLogin() {
   const router = useRouter();
 
   return useMutation({
     mutationKey: ['auth', 'login'],
     mutationFn: (payload: LoginPayload) =>
-      postRequest<LoginResponse, LoginPayload>({
+      postRequest<LoginChallengeResponse, LoginPayload>({
         url: API_ENDPOINTS.AUTH.LOGIN,
+        payload,
+      }),
+
+    // 202: password accepted, a one-time code was emailed. Move to the code-entry page.
+    // No session cookies are set until the code is verified (step 2).
+    onSuccess(_response, variables) {
+      toast.success('We sent a login code to your email.');
+      router.push(`/login/verify?email=${encodeURIComponent(variables.email)}`);
+    },
+
+    onError(error) {
+      displayError(error, 'Unable to sign in. Check your email and password.', {
+        401: 'Invalid email or password.',
+        403: 'Email not verified. Please check your inbox.',
+      });
+    },
+  });
+}
+
+// ── useVerifyLoginOtp (step 2: code → session) ───────────────────────────────
+export function useVerifyLoginOtp() {
+  const router = useRouter();
+
+  return useMutation({
+    mutationKey: ['auth', 'login', 'verify'],
+    mutationFn: (payload: VerifyOtpPayload) =>
+      postRequest<LoginResponse, VerifyOtpPayload>({
+        url: API_ENDPOINTS.AUTH.LOGIN_VERIFY,
         payload,
       }),
 
@@ -92,9 +127,8 @@ export function useLogin() {
     },
 
     onError(error) {
-      displayError(error, 'Unable to sign in. Check your email and password.', {
-        401: 'Invalid email or password.',
-        403: 'Email not verified. Please check your inbox.',
+      displayError(error, 'That code did not work. Please try again.', {
+        401: 'Invalid or expired code.',
       });
     },
   });

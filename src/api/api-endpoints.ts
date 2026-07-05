@@ -4,6 +4,8 @@ export const API_ENDPOINTS = {
   AUTH: {
     REGISTER:        '/developers/register',
     LOGIN:           '/developers/login',
+    // Step 2 of login: verify the emailed one-time code, which sets the session cookies.
+    LOGIN_VERIFY:    '/developers/login/verify',
     // Dashboard session is cookie-based: refresh + logout rotate/clear the HttpOnly
     // xnt_access / xnt_refresh cookies (no tokens in the body).
     REFRESH:         '/developers/refresh',
