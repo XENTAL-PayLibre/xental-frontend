@@ -47,14 +47,14 @@ export default function CustomersPage() {
 
   return (
     <div className='flex flex-col gap-5'>
-      <div className='flex items-start justify-between'>
+      <div className='flex flex-col sm:flex-row sm:items-start justify-between gap-4'>
         <div>
           <h1 className='text-xl font-bold text-foreground'>Customers</h1>
           <p className='text-sm text-xental-text-primary-400 mt-0.5'>
             View and manage customer information, fees, and payment activity.
           </p>
         </div>
-        <div className='flex items-center gap-2'>
+        <div className='flex flex-wrap items-center gap-2'>
           <Button
             size='sm'
             variant='outline'
@@ -75,8 +75,8 @@ export default function CustomersPage() {
 
       <div className='bg-white rounded-xl border border-stroke-2'>
         {/* Toolbar */}
-        <div className='flex items-center justify-between px-4 py-3 border-b border-stroke-2'>
-          <div className='relative'>
+        <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 border-b border-stroke-2'>
+          <div className='relative w-full sm:w-auto'>
             <Search className='w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-xental-text-primary-400' />
             <input
               value={search}
@@ -85,10 +85,10 @@ export default function CustomersPage() {
                 setPage(1);
               }}
               placeholder='Search by name or ID'
-              className='pl-8 pr-3 py-1.5 text-xs border border-stroke-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-action-blue/30 focus:border-action-blue w-56'
+              className='pl-8 pr-3 py-1.5 text-xs border border-stroke-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-action-blue/30 focus:border-action-blue w-full sm:w-56'
             />
           </div>
-          <div className='flex items-center gap-2'>
+          <div className='flex items-center gap-2 w-full sm:w-auto justify-end'>
             <FilterDropdown
               label='Status'
               options={['Active', 'Inactive']}

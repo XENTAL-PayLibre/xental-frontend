@@ -34,13 +34,13 @@ const ROLES = ['Admin', 'Employee', 'Developer'];
 
 function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void }) {
   return (
-    <div className='flex items-center gap-1 border border-stroke-2 rounded-lg p-1 w-fit mb-6'>
+    <div className='flex items-center gap-1 border border-stroke-2 rounded-lg p-1 w-full sm:w-fit mb-6 overflow-x-auto whitespace-nowrap scrollbar-hide'>
       {TABS.map((t) => (
         <button
           key={t}
           onClick={() => onChange(t)}
           className={cn(
-            'px-3 py-1 text-xs rounded-md transition-colors',
+            'px-3 py-1 text-xs rounded-md transition-colors shrink-0',
             active === t ? 'bg-white shadow-sm font-medium text-foreground border border-stroke-2' : 'text-xental-text-primary-400 hover:text-foreground'
           )}
         >
@@ -164,8 +164,8 @@ function TeamTab() {
           <Plus className='w-3.5 h-3.5 mr-1.5' /> Add team member
         </Button>
       </div>
-      <div className='border border-stroke-2 rounded-xl overflow-hidden'>
-        <table className='w-full text-xs'>
+      <div className='border border-stroke-2 rounded-xl overflow-x-auto'>
+        <table className='w-full text-xs min-w-[500px]'>
           <thead>
             <tr className='border-b border-stroke-2 bg-xental-bg'>
               <th className='text-left px-4 py-3 font-medium text-xental-text-primary-400'>Name</th>
@@ -453,7 +453,7 @@ export default function SettingsPage() {
         <p className='text-sm text-xental-text-primary-400 mt-0.5'>Manage your account preferences</p>
       </div>
 
-      <div className='bg-white rounded-xl border border-stroke-2 p-6'>
+      <div className='bg-white rounded-xl border border-stroke-2 p-4 sm:p-6 overflow-x-hidden'>
         <TabBar active={tab} onChange={setTab} />
         {tab === 'Profile' && <ProfileTab />}
         {tab === 'Team' && <TeamTab />}
