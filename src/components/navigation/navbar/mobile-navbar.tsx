@@ -14,17 +14,17 @@ import { Button } from '@/components/ui/button';
 
 const SOCIAL_LINKS = [
   {
-    socialIcon: '/images/landing/icon/twitter.svg',
+    socialIcon: '/images/landing/Icon/twitter.svg',
     href: 'https://twitter.com/xental',
     label: 'Twitter',
   },
   {
-    socialIcon: '/images/landing/icon/github.svg',
+    socialIcon: '/images/landing/Icon/github.svg',
     href: 'https://github.com/xental',
     label: 'GitHub',
   },
   {
-    socialIcon: '/images/landing/icon/linkedin.svg',
+    socialIcon: '/images/landing/Icon/linkedin.svg',
     href: 'https://linkedin.com/company/xental',
     label: 'LinkedIn',
   },
