@@ -55,6 +55,17 @@ export default function MobileNav() {
     }
   }, [open]);
 
+  // Close the mobile menu automatically if the screen is resized to 'md' (768px) or larger
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768 && open) {
+        setOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [open]);
+
   const panel = (
     <div
       className={cn(
@@ -98,8 +109,8 @@ export default function MobileNav() {
 
       {/* ── Secondary links + socials ─────────────────────── */}
       <div className='flex flex-col items-center gap-6 pb-14'>
-        <div className='flex gap-4'>
-          <Button size='lg' asChild className='bg-primary'>
+        <div className='flex flex-col w-full px-8 gap-3'>
+          <Button size='lg' asChild className='bg-primary w-full'>
             <Link href='/signup' onClick={() => setOpen(false)}>
               Get Started
             </Link>
@@ -108,7 +119,17 @@ export default function MobileNav() {
             size='lg'
             variant='outline'
             asChild
-            className='bg-transparent border-[#d4d4d4] hover:bg-white/10'
+            className='w-full bg-transparent border-[#d4d4d4] hover:bg-gray-50'
+          >
+            <Link href='/login' onClick={() => setOpen(false)}>
+              Log in
+            </Link>
+          </Button>
+          <Button
+            size='lg'
+            variant='ghost'
+            asChild
+            className='w-full text-muted-foreground'
           >
             <Link href='/api-docs' onClick={() => setOpen(false)}>
               API Docs
@@ -126,7 +147,7 @@ export default function MobileNav() {
               aria-label={label}
               className='text-muted-foreground transition-colors hover:text-foreground'
             >
-              <Image
+              <img
                 src={socialIcon}
                 alt={label}
                 width={20}

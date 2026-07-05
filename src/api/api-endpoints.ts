@@ -37,4 +37,5 @@ export const API_ENDPOINTS = {
     RESEND: (id: string) => `/team/${id}/resend`,
     ACCEPT: '/team/accept',
   },
+
 } as const;

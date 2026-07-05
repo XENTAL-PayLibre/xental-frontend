@@ -28,21 +28,20 @@ export async function loginSessionAction(
   const cookieStore = await cookies();
 
   // Readable by client JS (axios needs it for request headers)
-  cookieStore.set('access_token', accessToken, cookieOptions(false));
+  cookieStore.set('xnt_access', accessToken, cookieOptions(false));
 
   // httpOnly — only readable by Server Actions / Route Handlers
-  cookieStore.set('refresh_token', refreshToken, cookieOptions(true));
+  cookieStore.set('xnt_refresh', refreshToken, cookieOptions(true));
 
   // Sentinel flag so client knows a refresh token exists without reading it
   cookieStore.set('has_refresh_token', 'true', cookieOptions(false));
 
-  if (expiresIn) {
-    cookieStore.set(
-      'access_token_expires_at',
-      String(Date.now() + expiresIn * 1000),
-      cookieOptions(false),
-    );
-  }
+  const effectiveExpiry = expiresIn ?? 900;
+  cookieStore.set(
+    'access_token_expires_at',
+    String(Date.now() + effectiveExpiry * 1000),
+    cookieOptions(false),
+  );
 }
 
 /**
@@ -56,43 +55,48 @@ export async function refreshSessionAction(): Promise<{
   reason?: string;
 }> {
   const cookieStore = await cookies();
-  const refreshToken = cookieStore.get('refresh_token')?.value;
+  const refreshToken = cookieStore.get('xnt_refresh')?.value;
 
   if (!refreshToken) {
     return { success: false, reason: 'no_refresh_token' };
   }
 
   try {
-    const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}${API_ENDPOINTS.AUTH.REFRESH}`, {
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') ?? 'https://api.staging.xental.online';
+    const res = await fetch(`${API_BASE}${API_ENDPOINTS.AUTH.REFRESH}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh_token: refreshToken }),
+      headers: {
+        'Content-Type': 'application/json',
+        'Cookie': `xnt_refresh=${refreshToken}`,
+      },
     });
 
     if (!res.ok) {
       return { success: false, reason: 'server_error' };
     }
 
-    const json = await res.json();
-    const accessToken: string = json?.data?.access_token;
-    const expiresIn: number   = json?.data?.expires_in;
+    // Backend sets new cookies in Set-Cookie headers — extract xnt_access value
+    const setCookies = res.headers.getSetCookie?.() ?? [];
+    let accessToken: string | undefined;
+
+    for (const raw of setCookies) {
+      const match = raw.match(/^xnt_access=([^;]+)/);
+      if (match) {
+        accessToken = match[1];
+        // Write it as a readable (non-httpOnly) cookie so JS/axios can use it
+        cookieStore.set('xnt_access', accessToken, cookieOptions(false));
+      }
+      const refreshMatch = raw.match(/^xnt_refresh=([^;]+)/);
+      if (refreshMatch) {
+        cookieStore.set('xnt_refresh', refreshMatch[1], cookieOptions(true));
+      }
+    }
 
     if (!accessToken) {
       return { success: false, reason: 'no_access_token' };
     }
 
-    // Rotate access token cookie
-    cookieStore.set('access_token', accessToken, cookieOptions(false));
-    if (expiresIn) {
-      cookieStore.set(
-        'access_token_expires_at',
-        String(Date.now() + expiresIn * 1000),
-        cookieOptions(false),
-      );
-    }
-
-    return { success: true, accessToken, expiresIn };
+    return { success: true, accessToken };
   } catch {
     return { success: false, reason: 'server_error' };
   }
@@ -101,7 +105,7 @@ export async function refreshSessionAction(): Promise<{
 // Clears all auth cookies on the server (used on logout).
 export async function clearSessionAction(): Promise<void> {
   const cookieStore = await cookies();
-  ['access_token', 'refresh_token', 'has_refresh_token', 'access_token_expires_at'].forEach(
+  ['xnt_access', 'xnt_refresh', 'has_refresh_token', 'access_token_expires_at'].forEach(
     (key) => cookieStore.delete(key),
   );
 }
