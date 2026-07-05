@@ -147,7 +147,7 @@ export default function MobileNav() {
               aria-label={label}
               className='text-muted-foreground transition-colors hover:text-foreground'
             >
-              <Image
+              <img
                 src={socialIcon}
                 alt={label}
                 width={20}

@@ -58,9 +58,9 @@ export default function PayInsPage() {
       </div>
 
       <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
-        <StatCard label='Total Collected' value={koboToNaira(insights?.totalCollectedKobo ?? 0)} trend='up' trendValue={`${insights?.collectionRatePct?.toFixed(1) ?? 0}%`} icon={ArrowDownLeft} iconColor='text-success' />
-        <StatCard label='Successful' value={String(successful)} trend='up' trendValue='' icon={CheckCircle} iconColor='text-success' />
-        <StatCard label='Failed' value={String(failed)} trend='down' trendValue='' icon={XCircle} iconColor='text-destructive' />
+        <StatCard label='Total Collected' value={koboToNaira(insights?.totalCollectedKobo ?? 0)} icon={'/images/dashboard/pay-in.svg'} />
+        <StatCard label='Successful' value={String(successful)} icon={'/images/dashboard/successful.svg'} />
+        <StatCard label='Failed' value={String(failed)} icon={'/images/dashboard/failed.svg'} />
       </div>
 
       <div className='bg-white rounded-xl border border-stroke-2'>
