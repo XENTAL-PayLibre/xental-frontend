@@ -30,7 +30,7 @@ const Navbar = () => {
       <div className='container flex items-center justify-between'>
         <Logo />
 
-        <div className='hidden md:flex items-center justify-center gap-12'>
+        <div className='hidden md:flex items-center justify-center gap-4 lg:gap-12'>
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
@@ -42,7 +42,15 @@ const Navbar = () => {
           ))}
         </div>
 
-        <div className='flex items-center'>
+        <div className='flex items-center gap-2'>
+          <Button
+            size='lg'
+            variant='outline'
+            asChild
+            className='w-[80px] lg:w-[100px] hidden md:inline-flex md:border-transparent md:hover:bg-transparent lg:border-input lg:hover:bg-accent lg:hover:text-accent-foreground rounded-[8px] font-semibold text-foreground transition-colors'
+          >
+            <Link href='/login'>Log in</Link>
+          </Button>
           <Button
             size='lg'
             asChild

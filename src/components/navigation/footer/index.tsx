@@ -77,7 +77,7 @@ const Footer = () => {
                 aria-label={label}
                 className='text-muted transition-colors hover:text-muted-foreground'
               >
-                <Image
+                <img
                   src={socialIcon}
                   alt={label}
                   width={20}

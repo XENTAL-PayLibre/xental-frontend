@@ -3,6 +3,13 @@ import { NextRequest, NextResponse } from 'next/server';
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') ?? 'https://api.staging.xental.online';
 
 async function handler(request: NextRequest) {
+  // CRITICAL SECURITY: Ensure this proxy is NEVER accessible in production.
+  // Although `api-base-url.ts` only routes here locally, without this gate, 
+  // the route is still built and could be used as an open proxy by attackers.
+  if (process.env.NODE_ENV !== 'development') {
+    return NextResponse.json({ error: 'Proxy is restricted to local development' }, { status: 403 });
+  }
+
   const url = new URL(request.url);
   // Strip /api/proxy prefix, forward the rest
   const apiPath = url.pathname.replace('/api/proxy', '');

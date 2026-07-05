@@ -17,7 +17,7 @@ function getErrorMessage(
 ): string {
   if (typeof error === 'object' && error !== null) {
     const axiosError = error as { response?: { data?: { message?: string; detail?: string }; status?: number } };
-    
+
     // 1. Check if the specific API hook provided a custom message for this status code
     const status = axiosError.response?.status;
     if (status && statusMap?.[status]) {

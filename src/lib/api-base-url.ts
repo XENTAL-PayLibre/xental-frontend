@@ -1,6 +1,8 @@
 /** Browser API base URL. Routes through local proxy in dev so cookies work on localhost. */
 export function getApiBaseUrl(): string {
-  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+  // In local development, use our custom API Route Proxy to physically strip
+  // the 'Domain' and 'Secure' tags from the backend's Set-Cookie headers.
+  if (process.env.NODE_ENV === 'development') {
     return '/api/proxy/api/v1';
   }
   const raw = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');

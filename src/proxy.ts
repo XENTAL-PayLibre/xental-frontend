@@ -18,7 +18,9 @@ export function proxy(request: NextRequest) {
   const hasSessionCookie = request.cookies.has('xnt_session');
 
   const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
-  const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route));
+  const isProtectedRoute = protectedRoutes.some((route) =>
+    pathname.startsWith(route)
+  );
 
   // If the user is logged in and tries to access an Auth route (like /login), redirect to Dashboard
   if (hasSessionCookie && isAuthRoute) {

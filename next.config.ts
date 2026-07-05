@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
   // deploy; re-enable once the frontend compiles clean.
   typescript: { ignoreBuildErrors: true },
   eslint: { ignoreDuringBuilds: true },
+
+
 };
 
 export default nextConfig;

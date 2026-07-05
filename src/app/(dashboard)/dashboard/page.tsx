@@ -19,10 +19,16 @@ export default function DashboardHome() {
         <div>
           <h1 className='text-xl font-bold text-foreground'>Home</h1>
           <p className='text-sm text-xental-text-primary-400 mt-0.5'>
-            {profile?.name ? `Welcome back, ${profile.name.split(' ')[0]}` : 'Welcome back'}
+            {profile?.name
+              ? `Welcome back, ${profile.name.split(' ')[0]}`
+              : 'Welcome back'}
           </p>
         </div>
-        <Button size='sm' className='gap-1.5' onClick={() => toast.info('Export coming soon')}>
+        <Button
+          size='sm'
+          className='gap-1.5'
+          onClick={() => toast.info('Export coming soon')}
+        >
           <Download className='w-3.5 h-3.5' />
           Export
         </Button>
@@ -30,28 +36,21 @@ export default function DashboardHome() {
 
       <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
         <StatCard
-          label='Total Collected'
-          value={isLoading ? '—' : koboToNaira(insights?.totalCollectedKobo ?? 0)}
-          trend='up'
-          trendValue={isLoading ? '' : `${insights?.collectionRatePct?.toFixed(1) ?? 0}% collection rate`}
-          icon={ArrowDownLeft}
-          iconColor='text-success'
+          label='Total Pay-ins'
+          value={
+            isLoading ? '—' : koboToNaira(insights?.totalCollectedKobo ?? 0)
+          }
+          icon={'/images/dashboard/pay-in.svg'}
         />
         <StatCard
-          label='Virtual Accounts'
+          label='Successful'
           value={isLoading ? '—' : String(insights?.virtualAccounts ?? 0)}
-          trend='up'
-          trendValue={isLoading ? '' : `${insights?.fullyPaidAccounts ?? 0} fully paid`}
-          icon={ArrowUpRight}
-          iconColor='text-action-blue'
+          icon={'/images/dashboard/successful.svg'}
         />
         <StatCard
-          label='Pending Review'
+          label='Failed'
           value={isLoading ? '—' : String(insights?.pendingReview ?? 0)}
-          trend='up'
-          trendValue={isLoading ? '' : `${insights?.underpaid ?? 0} underpaid`}
-          icon={Clock}
-          iconColor='text-pending'
+          icon={'/images/dashboard/failed.svg'}
         />
       </div>
 
