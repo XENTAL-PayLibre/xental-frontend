@@ -30,6 +30,22 @@ export type LoginPayload = {
   password: string;
 };
 
+/**
+ * 202 response from POST /developers/login: the password was accepted and a one-time
+ * code was emailed. The session is NOT started yet — verify the code to finish.
+ */
+export type LoginChallengeResponse = {
+  email: string;
+  expiresAtUtc: string;
+  otpRequired: boolean;
+  message: string;
+};
+
+export type VerifyOtpPayload = {
+  email: string;
+  code: string;
+};
+
 export type LoginResponse = {
   tenantId: string;
   email: string;

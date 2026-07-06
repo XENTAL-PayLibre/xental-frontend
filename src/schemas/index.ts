@@ -20,6 +20,13 @@ export const SignupSchema = z
     path: ['confirmPassword'],
   });
 
+export const LoginOtpSchema = z.object({
+  code: z
+    .string()
+    .min(1, { message: 'Enter the 6-digit code' })
+    .regex(/^\d{6}$/, { message: 'The code is 6 digits' }),
+});
+
 export const LoginSchema = z.object({
   email: z.string().min(1, { message: 'Field is required' }).email({
     message: 'Invalid email address',
