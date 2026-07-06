@@ -1,12 +1,31 @@
 'use client';
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { postRequest } from '@/lib/http';
+import { postRequest, getRequest } from '@/lib/http';
 import { displayError } from './auth'; // Shared display error
 import { API_ENDPOINTS } from './api-endpoints';
 import type { CreateVirtualAccountPayload } from './types/virtual-accounts';
 import type { VirtualAccountResponse } from './types/dashboard';
+
+export function useVirtualAccountsList() {
+  return useQuery({
+    queryKey: ['virtual-accounts'],
+    queryFn: () => getRequest<VirtualAccountResponse[]>({ url: API_ENDPOINTS.VIRTUAL_ACCOUNTS.CREATE }),
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useVirtualAccount(accountRef: string) {
+  return useQuery({
+    queryKey: ['virtual-accounts', accountRef],
+    queryFn: () =>
+      getRequest<VirtualAccountResponse>({
+        url: `/virtual-accounts/${accountRef}`,
+      }),
+    enabled: !!accountRef,
+  });
+}
 
 export function useCreateVirtualAccount() {
   const qc = useQueryClient();

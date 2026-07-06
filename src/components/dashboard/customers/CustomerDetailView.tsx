@@ -1,0 +1,230 @@
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { ArrowLeft, Download, MoreVertical } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { cn, koboToNaira, formatDate } from '@/lib/utils';
+import FilterDropdown from '@/components/dashboard/FilterDropdown';
+import { useTransactions } from '@/api/dashboard';
+import { useVirtualAccount } from '@/api/virtual-accounts';
+
+type Tab = 'Recent transactions' | 'Profile';
+const TABS: Tab[] = ['Recent transactions', 'Profile'];
+
+const STATUS_BADGE: Record<string, string> = {
+  Successful: 'bg-green-50 text-success',
+  Failed: 'bg-red-50 text-destructive',
+  Pending: 'bg-orange-50 text-pending',
+};
+
+function DetailBlock({ label, value }: { label: string; value: string }) {
+  return (
+    <div className='flex flex-col gap-1.5'>
+      <span className='text-sm text-foreground font-semibold'>
+        {label}
+      </span>
+      <span className='text-base text-xental-text-primary-500'>{value}</span>
+    </div>
+  );
+}
+
+export function CustomerDetailView({ accountRef }: { accountRef: string }) {
+
+  const { data: profile, isLoading: isProfileLoading } = useVirtualAccount(accountRef);
+  const { data: transactions = [], isLoading: isTxLoading } = useTransactions({ virtualAccountId: profile?.id });
+
+  const [tab, setTab] = useState<Tab>('Recent transactions');
+  const [dateFilter, setDateFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+
+  if (isProfileLoading) {
+    return <div className="p-8 text-center text-xental-text-primary-400">Loading customer details...</div>;
+  }
+
+  if (!profile) {
+    return <div className="p-8 text-center text-destructive">Customer not found</div>;
+  }
+
+  return (
+    <div className='flex flex-col gap-8'>
+      {/* Header */}
+      <div className='flex items-center gap-3'>
+        <Link
+          href='/dashboard/customers'
+          className='p-2 -ml-2 rounded-full hover:bg-xental-bg transition-colors flex items-center justify-center'
+        >
+          <ArrowLeft className='w-5 h-5 text-foreground' />
+        </Link>
+        <h1 className='text-[22px] font-bold text-foreground'>
+          Customer Details
+        </h1>
+      </div>
+
+      {/* Profile Summary */}
+      <div className='bg-white rounded-[12px] px-4 md:px-6 py-6 md:py-8 flex flex-col md:flex-row items-center md:items-start gap-6'>
+        <div className='w-24 h-24 md:w-[120px] md:h-[120px] rounded-full overflow-hidden shrink-0 bg-xental-blue-100 flex items-center justify-center'>
+          <span className='text-4xl font-bold text-action-blue'>
+            {(profile.accountName ?? 'C').charAt(0).toUpperCase()}
+          </span>
+        </div>
+        <div className='flex flex-col items-center md:items-start gap-4 md:gap-3 w-full'>
+          <h2 className='text-xl md:text-lg font-semibold text-foreground'>
+            {profile.accountName ?? '—'}
+          </h2>
+          <div className='flex flex-wrap items-center justify-center md:justify-start gap-6 md:gap-12 w-full'>
+            <div className='flex flex-col items-center md:items-start gap-1 text-center md:text-left'>
+              <span className='text-sm md:text-base text-muted'>Date created</span>
+              <span className='text-sm md:text-base text-foreground font-medium'>
+                Joined {formatDate(profile.createdAtUtc)}
+              </span>
+            </div>
+            <div className='flex flex-col items-center md:items-start gap-1 text-center md:text-left'>
+              <span className='text-sm md:text-base text-muted'>Dedicated account</span>
+              <span className='text-sm md:text-base text-foreground font-medium'>
+                {profile.accountNumber ?? '—'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className='bg-white rounded-[12px] px-6 py-8 flex flex-col gap-6'>
+        {/* Tabs */}
+        <div className='flex items-center gap-2'>
+          <div className='flex items-center p-1 bg-gray-100 rounded-[12px] border border-stroke-2/50'>
+            {TABS.map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={cn(
+                  'px-4 py-1.5 text-xs font-medium rounded-full transition-all',
+                  tab === t
+                    ? 'bg-white text-foreground shadow-sm'
+                    : 'text-xental-text-primary-500 hover:text-foreground'
+                )}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        <div className='mt-2'>
+          {tab === 'Recent transactions' && (
+            <div className='flex flex-col gap-5'>
+              <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
+                <h3 className='text-sm font-semibold text-foreground'>
+                  Recent transactions
+                </h3>
+                <div className='flex flex-wrap items-center gap-3'>
+                  <FilterDropdown
+                    label='Date'
+                    options={['Today', 'Last 7 days', 'Last 30 days']}
+                    value={dateFilter}
+                    onChange={setDateFilter}
+                  />
+                  <FilterDropdown
+                    label='Status'
+                    options={['Successful', 'Failed', 'Pending']}
+                    value={statusFilter}
+                    onChange={setStatusFilter}
+                  />
+                  <Button
+                    size='sm'
+                    className='gap-1.5 px-4 h-8 bg-action-blue hover:bg-action-blue/90'
+                  >
+                    <Download className='w-3.5 h-3.5' /> Export
+                  </Button>
+                </div>
+              </div>
+
+              <div className='overflow-x-auto'>
+                <table className='w-full text-xs'>
+                  <thead>
+                    <tr className='border-b border-stroke-2'>
+                      <th className='text-left px-4 py-3 font-semibold text-foreground w-[25%]'>
+                        Transaction ID
+                      </th>
+                      <th className='text-left px-4 py-3 font-semibold text-foreground w-[25%]'>
+                        Date
+                      </th>
+                      <th className='text-left px-4 py-3 font-semibold text-foreground w-[25%]'>
+                        Amount
+                      </th>
+                      <th className='text-left px-4 py-3 font-semibold text-foreground w-[253px]'>
+                        Status
+                      </th>
+                      <th className='p py-3 w-8' />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {isTxLoading ? (
+                      <tr><td colSpan={5} className="py-8 text-center text-xental-text-primary-400">Loading transactions...</td></tr>
+                    ) : transactions.length === 0 ? (
+                      <tr><td colSpan={5} className="py-8 text-center text-xental-text-primary-400">No transactions found</td></tr>
+                    ) : (
+                      transactions.map((tx) => (
+                        <tr
+                          key={tx.id}
+                          className='border-b border-stroke-2/50 last:border-0 hover:bg-xental-bg transition-colors'
+                        >
+                          <td className='px-4 py-3.5 text-xental-text-primary-500 font-medium'>
+                            {tx.reference ?? '—'}
+                          </td>
+                          <td className='px-4 py-3.5 text-xental-text-primary-500'>
+                            {formatDate(tx.occurredAtUtc)}
+                          </td>
+                          <td className='px-4 py-3.5 text-foreground font-medium'>
+                            {koboToNaira(tx.amountKobo)}
+                          </td>
+                          <td className='px-3 py-3.5'>
+                            <span
+                              className={cn(
+                                'px-2.5 py-1 rounded-md text-[11px] font-medium',
+                                STATUS_BADGE[tx.status ?? 'Pending'] ?? 'bg-gray-50 text-gray-500'
+                              )}
+                            >
+                              {tx.status ?? 'Pending'}
+                            </span>
+                          </td>
+                          <td className='px-4 py-3.5 text-right'>
+                            <MoreVertical className='w-3.5 h-3.5 text-xental-text-primary-400 cursor-pointer inline-block' />
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {tab === 'Profile' && (
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-y-10 gap-x-12 lg:gap-x-24 w-full'>
+              {/* Left Column */}
+              <div className='flex flex-col gap-10'>
+                <DetailBlock label='Account name' value={profile.accountName ?? '—'} />
+                <div className='flex items-center gap-12 sm:gap-16'>
+                  <DetailBlock label='Country code' value={(profile as any).countryCode ?? '—'} />
+                  <DetailBlock label='Phone number' value={(profile as any).phone ?? '—'} />
+                </div>
+                <DetailBlock label='KYC' value={profile.status === 'Active' ? 'Verified' : 'Unverified'} />
+              </div>
+
+              {/* Right Column */}
+              <div className='flex flex-col gap-10'>
+                <div className='flex items-center gap-12 sm:gap-16 lg:gap-24'>
+                  <DetailBlock label='Bank name' value={profile.bankName ?? '—'} />
+                  <DetailBlock label='Dedicated account' value={profile.accountNumber ?? '—'} />
+                </div>
+                <DetailBlock label='Email' value={(profile as any).email ?? '—'} />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

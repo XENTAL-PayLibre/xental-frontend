@@ -2,42 +2,46 @@
 
 export const API_ENDPOINTS = {
   AUTH: {
-    REGISTER:        '/developers/register',
-    LOGIN:           '/developers/login',
+    REGISTER: '/developers/register',
+    LOGIN: '/developers/login',
     // Step 2 of login: verify the emailed one-time code, which sets the session cookies.
-    LOGIN_VERIFY:    '/developers/login/verify',
+    LOGIN_VERIFY: '/developers/login/verify',
     // Dashboard session is cookie-based: refresh + logout rotate/clear the HttpOnly
     // xnt_access / xnt_refresh cookies (no tokens in the body).
-    REFRESH:         '/developers/refresh',
-    LOGOUT:          '/developers/logout',
+    REFRESH: '/developers/refresh',
+    LOGOUT: '/developers/logout',
     FORGOT_PASSWORD: '/developers/forgot-password',
-    RESET_PASSWORD:  '/developers/reset-password',
-    VERIFY_EMAIL:    '/developers/verify-email',
-    TOKEN:           '/auth/token',
+    RESET_PASSWORD: '/developers/reset-password',
+    VERIFY_EMAIL: '/developers/verify-email',
+    TOKEN: '/auth/token',
   },
   API_KEYS: {
-    BASE:   '/api-keys',
+    BASE: '/api-keys',
     ROTATE: (id: string) => `/api-keys/${id}/rotate`,
-    ONE:    (id: string) => `/api-keys/${id}`,
+    ONE: (id: string) => `/api-keys/${id}`,
   },
   ONBOARDING: {
-    STATUS:    '/onboarding',
+    STATUS: '/onboarding',
     DEVELOPER: '/onboarding/developer',
-    BUSINESS:  '/onboarding/business',
+    BUSINESS: '/onboarding/business',
     DOCUMENTS: '/onboarding/documents',
-    SUBMIT:    '/onboarding/submit',
+    SUBMIT: '/onboarding/submit',
   },
   WEBHOOKS: {
     BASE: '/webhook-endpoints',
-    ONE:  (id: string) => `/webhook-endpoints/${id}`,
+    ONE: (id: string) => `/webhook-endpoints/${id}`,
   },
   TEAM: {
-    BASE:   '/team',
-    ONE:    (id: string) => `/team/${id}`,
+    BASE: '/team',
+    ONE: (id: string) => `/team/${id}`,
     RESEND: (id: string) => `/team/${id}/resend`,
     ACCEPT: '/team/accept',
   },
   VIRTUAL_ACCOUNTS: {
     CREATE: '/virtual-accounts',
+    LIST: '/virtual-accounts',
+  },
+  ACCOUNT_INSIGHTS: {
+    BASE: '/insights',
   },
 } as const;
