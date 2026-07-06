@@ -1,8 +1,10 @@
+'use client';
 import React from 'react';
 import SectionHeader from '../ui/SectionHeader';
 import Image from 'next/image';
 import { Button } from '../ui/button';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 
 const experience = [
   { id: 1, text: 'RESTful APIs with comprehensive documentation' },
@@ -13,24 +15,50 @@ const experience = [
   { id: 6, text: 'Postman collection included' },
 ];
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, x: -20 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.5 } },
+};
+
 const Experience = () => {
   return (
-    <section className='pt-15 pb-20'>
+    <section id="experience" className='pt-15 pb-20 scroll-mt-16'>
       <div className='container'>
-        <SectionHeader
-          badge='Developer Experience'
-          title={
-            <h2 className='text-3xl font-semibold text-muted-foreground lg:text-5xl'>
-              Developer-First Infrastructure
-            </h2>
-          }
-          description={
-            'Integrate in minutes with our intuitive APIs and comprehensive documentation'
-          }
-        />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.6 }}
+        >
+          <SectionHeader
+            badge='Developer Experience'
+            title={
+              <h2 className='text-3xl font-semibold text-muted-foreground lg:text-5xl'>
+                Developer-First Infrastructure
+              </h2>
+            }
+            description={
+              'Integrate in minutes with our intuitive APIs and comprehensive documentation'
+            }
+          />
+        </motion.div>
 
         <div className='grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-15 xl:gap-[113px]'>
-          <div className='flex justify-center'>
+          <motion.div 
+            className='flex justify-center'
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
             <Image
               src='/images/landing/terminal.png'
               alt='Developer Experience'
@@ -38,10 +66,17 @@ const Experience = () => {
               height={316}
               className='w-full h-auto'
             />
-          </div>
-          <div className='flex flex-col gap-5'>
+          </motion.div>
+          
+          <motion.div 
+            className='flex flex-col gap-5'
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={containerVariants}
+          >
             {experience.map((item) => (
-              <div key={item.id} className='flex gap-4 text-muted-foreground'>
+              <motion.div variants={itemVariants} key={item.id} className='flex gap-4 text-muted-foreground'>
                 <Image
                   src='/images/landing/bulletpoint.svg'
                   alt='Bullet Point Icon'
@@ -50,12 +85,14 @@ const Experience = () => {
                   className='shrink-0 self-start'
                 />
                 {item.text}
-              </div>
+              </motion.div>
             ))}
-            <Button size='lg' asChild className='bg-primary w-fit mt-auto'>
-              <Link href='/api-docs'>View API Docs</Link>
-            </Button>
-          </div>
+            <motion.div variants={itemVariants}>
+              <Button size='lg' asChild className='bg-primary w-fit mt-auto'>
+                <Link href='/api-docs'>View API Docs</Link>
+              </Button>
+            </motion.div>
+          </motion.div>
         </div>
       </div>
     </section>

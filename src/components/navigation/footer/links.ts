@@ -2,7 +2,7 @@ export const FOOTER_LINKS = [
   {
     heading: 'Product',
     links: [
-      { label: 'Features', href: '/features' },
+      { label: 'Features', href: '/#solution' },
       { label: 'Solutions', href: '/solutions' },
       { label: 'Integrations', href: '/integrations' },
       { label: 'API', href: '/product/api' },

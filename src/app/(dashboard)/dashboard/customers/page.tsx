@@ -11,6 +11,9 @@ import { cn, formatDate } from '@/lib/utils';
 import { useSubMerchants } from '@/api/dashboard';
 import type { SubMerchantResponse } from '@/api/types/dashboard';
 
+import Modal from '@/components/ui/Modal';
+import { useCreateVirtualAccount } from '@/api/virtual-accounts';
+
 const STATUS_STYLES: Record<string, string> = {
   Active: 'text-success',
   Inactive: 'text-xental-text-primary-400',
@@ -23,8 +26,53 @@ export default function CustomersPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({
+    accountRef: '',
+    name: '',
+    email: '',
+    phone: '',
+    expectedAmountKobo: 0,
+    expiryDateUtc: '',
+    subMerchantRef: '',
+  });
 
   const { data: subMerchants = [], isLoading } = useSubMerchants();
+  const createCustomer = useCreateVirtualAccount();
+
+  const handleCreateCustomer = () => {
+    if (!newCustomer.accountRef || !newCustomer.name || !newCustomer.email || !newCustomer.phone) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    createCustomer.mutate(
+      {
+        accountRef: newCustomer.accountRef,
+        name: newCustomer.name,
+        email: newCustomer.email,
+        phone: newCustomer.phone,
+        expectedAmountKobo: newCustomer.expectedAmountKobo,
+        expiryDateUtc: newCustomer.expiryDateUtc || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+        ...(newCustomer.subMerchantRef ? { subMerchantRef: newCustomer.subMerchantRef } : {}),
+      },
+      {
+        onSuccess: () => {
+          setIsAddModalOpen(false);
+          setNewCustomer({
+            accountRef: '',
+            name: '',
+            email: '',
+            phone: '',
+            expectedAmountKobo: 0,
+            expiryDateUtc: '',
+            subMerchantRef: '',
+          });
+        },
+      }
+    );
+  };
+
 
   const filtered = useMemo(() => {
     return subMerchants.filter((c: SubMerchantResponse) => {
@@ -66,7 +114,7 @@ export default function CustomersPage() {
           <Button
             size='sm'
             className='gap-1.5'
-            onClick={() => toast.info('Add customer coming soon')}
+            onClick={() => setIsAddModalOpen(true)}
           >
             <UserPlus className='w-3.5 h-3.5' /> Add customer
           </Button>
@@ -230,6 +278,132 @@ export default function CustomersPage() {
           </div>
         </div>
       </div>
+
+      <Modal
+        open={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        title='Create Customer (Virtual Account)'
+        className='max-w-lg'
+      >
+        <div className='space-y-4 mt-2'>
+          <div className='grid grid-cols-2 gap-4'>
+            <div>
+              <label className='mb-1 block text-xs font-medium text-foreground'>
+                Account Reference <span className='text-destructive'>*</span>
+              </label>
+              <input
+                value={newCustomer.accountRef}
+                onChange={(e) => setNewCustomer({ ...newCustomer, accountRef: e.target.value })}
+                placeholder='CUST-123'
+                className='w-full rounded-lg border border-stroke-2 px-3 py-2 text-sm outline-none focus:border-action-blue'
+              />
+            </div>
+            <div>
+              <label className='mb-1 block text-xs font-medium text-foreground'>
+                Full Name <span className='text-destructive'>*</span>
+              </label>
+              <input
+                value={newCustomer.name}
+                onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
+                placeholder='John Doe'
+                className='w-full rounded-lg border border-stroke-2 px-3 py-2 text-sm outline-none focus:border-action-blue'
+              />
+            </div>
+          </div>
+
+          <div className='grid grid-cols-2 gap-4'>
+            <div>
+              <label className='mb-1 block text-xs font-medium text-foreground'>
+                Email <span className='text-destructive'>*</span>
+              </label>
+              <input
+                type='email'
+                value={newCustomer.email}
+                onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
+                placeholder='john@example.com'
+                className='w-full rounded-lg border border-stroke-2 px-3 py-2 text-sm outline-none focus:border-action-blue'
+              />
+            </div>
+            <div>
+              <label className='mb-1 block text-xs font-medium text-foreground'>
+                Phone <span className='text-destructive'>*</span>
+              </label>
+              <input
+                type='tel'
+                value={newCustomer.phone}
+                onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
+                placeholder='+234...'
+                className='w-full rounded-lg border border-stroke-2 px-3 py-2 text-sm outline-none focus:border-action-blue'
+              />
+            </div>
+          </div>
+
+          <div className='grid grid-cols-2 gap-4'>
+            <div>
+              <label className='mb-1 block text-xs font-medium text-foreground'>
+                Expected Amount (Kobo)
+              </label>
+              <input
+                type='number'
+                value={newCustomer.expectedAmountKobo || ''}
+                onChange={(e) => setNewCustomer({ ...newCustomer, expectedAmountKobo: parseInt(e.target.value) || 0 })}
+                placeholder='0'
+                className='w-full rounded-lg border border-stroke-2 px-3 py-2 text-sm outline-none focus:border-action-blue'
+              />
+            </div>
+            <div>
+              <label className='mb-1 block text-xs font-medium text-foreground'>
+                Expiry Date
+              </label>
+              <input
+                type='datetime-local'
+                value={newCustomer.expiryDateUtc ? newCustomer.expiryDateUtc.slice(0, 16) : ''}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (!val) {
+                    setNewCustomer({ ...newCustomer, expiryDateUtc: '' });
+                    return;
+                  }
+                  try {
+                    const d = new Date(val);
+                    if (!isNaN(d.getTime())) {
+                      setNewCustomer({ ...newCustomer, expiryDateUtc: d.toISOString() });
+                    }
+                  } catch (err) {}
+                }}
+                className='w-full rounded-lg border border-stroke-2 px-3 py-2 text-sm outline-none focus:border-action-blue'
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className='mb-1 block text-xs font-medium text-foreground'>
+              Sub-Merchant Reference (Optional)
+            </label>
+            <input
+              value={newCustomer.subMerchantRef}
+              onChange={(e) => setNewCustomer({ ...newCustomer, subMerchantRef: e.target.value })}
+              placeholder='SUB-MERCH-456'
+              className='w-full rounded-lg border border-stroke-2 px-3 py-2 text-sm outline-none focus:border-action-blue'
+            />
+          </div>
+
+          <div className='flex justify-end gap-2 pt-2'>
+            <Button
+              variant='outline'
+              onClick={() => setIsAddModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreateCustomer}
+              disabled={createCustomer.isPending}
+            >
+              {createCustomer.isPending ? 'Creating...' : 'Create Customer'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
