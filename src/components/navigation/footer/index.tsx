@@ -1,8 +1,10 @@
+'use client';
 import Link from 'next/link';
 
 import Logo from '@/components/global/logo';
 import { FOOTER_LINKS } from './links';
 import Image from 'next/image';
+import { usePathname } from 'next/navigation';
 
 const SOCIAL_LINKS = [
   {
@@ -23,6 +25,8 @@ const SOCIAL_LINKS = [
 ];
 
 const Footer = () => {
+  const pathname = usePathname();
+
   return (
     <footer className='bg-white'>
       <div className='container py-16!'>
@@ -43,16 +47,30 @@ const Footer = () => {
                 {group.heading}
               </h3>
               <ul className='flex flex-col gap-3'>
-                {group.links.map((link) => (
-                  <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      className='text-sm text-muted transition-colors hover:text-foreground'
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
+                {group.links.map((link) => {
+                  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+                    if (pathname === '/' && link.href.startsWith('/#')) {
+                      e.preventDefault();
+                      const id = link.href.substring(2);
+                      const element = document.getElementById(id);
+                      if (element) {
+                        window.history.pushState(null, '', `/#${id}`);
+                        element.scrollIntoView({ behavior: 'smooth' });
+                      }
+                    }
+                  };
+                  return (
+                    <li key={link.href}>
+                      <Link
+                        href={link.href}
+                        onClick={handleLinkClick}
+                        className='text-sm text-muted transition-colors hover:text-foreground'
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
             </nav>
           ))}

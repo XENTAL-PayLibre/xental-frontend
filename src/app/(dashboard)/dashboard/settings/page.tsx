@@ -350,6 +350,38 @@ function DevelopersTab() {
   );
 }
 
+function PasswordField({
+  label,
+  value,
+  onChange,
+  show,
+  onToggleShow,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  show: boolean;
+  onToggleShow: () => void;
+}) {
+  return (
+    <div>
+      <label className='block text-xs text-xental-text-primary-400 mb-1'>{label}</label>
+      <div className='relative'>
+        <input
+          type={show ? 'text' : 'password'}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder='••••••••'
+          className='w-full border border-stroke-2 rounded-lg px-3 py-2 pr-9 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-action-blue/30 focus:border-action-blue'
+        />
+        <button type='button' onClick={onToggleShow} className='absolute right-3 top-1/2 -translate-y-1/2 text-xental-text-primary-400 hover:text-foreground'>
+          {show ? <EyeOff className='w-3.5 h-3.5' /> : <Eye className='w-3.5 h-3.5' />}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function SecurityTab() {
   const [form, setForm] = useState({ current: '', newPass: '', confirm: '' });
   const [show, setShow] = useState({ current: false, newPass: false, confirm: false });
@@ -371,26 +403,6 @@ function SecurityTab() {
     toast.success('Password updated successfully');
   }
 
-  function PasswordField({ label, field }: { label: string; field: keyof typeof form }) {
-    return (
-      <div>
-        <label className='block text-xs text-xental-text-primary-400 mb-1'>{label}</label>
-        <div className='relative'>
-          <input
-            type={show[field] ? 'text' : 'password'}
-            value={form[field]}
-            onChange={(e) => set(field)(e.target.value)}
-            placeholder='••••••••'
-            className='w-full border border-stroke-2 rounded-lg px-3 py-2 pr-9 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-action-blue/30 focus:border-action-blue'
-          />
-          <button type='button' onClick={() => toggleShow(field)} className='absolute right-3 top-1/2 -translate-y-1/2 text-xental-text-primary-400 hover:text-foreground'>
-            {show[field] ? <EyeOff className='w-3.5 h-3.5' /> : <Eye className='w-3.5 h-3.5' />}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className='flex flex-col gap-6'>
       {/* Change Password */}
@@ -398,9 +410,9 @@ function SecurityTab() {
         <h3 className='text-sm font-semibold text-foreground mb-1'>Change Password</h3>
         <p className='text-xs text-xental-text-primary-400 mb-4'>Update your password to keep your account secure.</p>
         <div className='flex flex-col gap-4 max-w-md'>
-          <PasswordField label='Current password' field='current' />
-          <PasswordField label='New password' field='newPass' />
-          <PasswordField label='Confirm new password' field='confirm' />
+          <PasswordField label='Current password' value={form.current} onChange={set('current')} show={show.current} onToggleShow={() => toggleShow('current')} />
+          <PasswordField label='New password' value={form.newPass} onChange={set('newPass')} show={show.newPass} onToggleShow={() => toggleShow('newPass')} />
+          <PasswordField label='Confirm new password' value={form.confirm} onChange={set('confirm')} show={show.confirm} onToggleShow={() => toggleShow('confirm')} />
           {form.newPass && form.confirm && form.newPass !== form.confirm && (
             <p className='text-xs text-destructive'>Passwords do not match</p>
           )}

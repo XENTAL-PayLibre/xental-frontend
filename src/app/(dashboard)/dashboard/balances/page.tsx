@@ -27,7 +27,11 @@ function FieldLabel({ label }: { label: string }) {
   return <label className='text-xs font-medium text-xental-text-primary-500'>{label}</label>;
 }
 
+import { useInsights } from '@/api/dashboard';
+
 export default function BalancesPage() {
+  const { data: insights, isLoading: insightsLoading } = useInsights();
+  
   const [depositOpen, setDepositOpen] = useState(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [depositAmount, setDepositAmount] = useState('');
@@ -35,6 +39,9 @@ export default function BalancesPage() {
   const [loading, setLoading] = useState(false);
 
   const fmt = (v: string) => v ? `₦${Number(v).toLocaleString()}` : '';
+
+  const totalBalance = (insights?.totalCollectedKobo || 0) / 100;
+  const formattedTotalBalance = `₦${totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   const handleDeposit = async () => {
     if (!depositAmount) return;
@@ -68,7 +75,9 @@ export default function BalancesPage() {
           <Wallet className='w-4 h-4 text-success' />
           <span className='text-xs text-xental-text-primary-400'>Total Balance</span>
         </div>
-        <p className='text-3xl font-bold text-foreground mb-4'>₦250,000</p>
+        <p className='text-3xl font-bold text-foreground mb-4'>
+          {insightsLoading ? '...' : formattedTotalBalance}
+        </p>
         <div className='flex items-center gap-2'>
           <Button size='sm' className='px-5' onClick={() => setDepositOpen(true)}>Deposit</Button>
           <Button size='sm' variant='secondary' className='px-5 bg-xental-secondary-500 text-white hover:bg-xental-secondary-600' onClick={() => setWithdrawOpen(true)}>
@@ -121,15 +130,15 @@ export default function BalancesPage() {
             </div>
           </div>
           {withdrawAmount && (
-            <div className={cn('rounded-lg px-3 py-2.5 text-xs', Number(withdrawAmount) > 250000 ? 'bg-red-50 text-destructive' : 'bg-xental-bg text-xental-text-primary-500')}>
-              {Number(withdrawAmount) > 250000
-                ? 'Insufficient balance. Available: ₦250,000'
-                : <>You will withdraw <span className='font-semibold text-foreground'>{fmt(withdrawAmount)}</span>. Available: ₦250,000</>}
+            <div className={cn('rounded-lg px-3 py-2.5 text-xs', Number(withdrawAmount) > totalBalance ? 'bg-red-50 text-destructive' : 'bg-xental-bg text-xental-text-primary-500')}>
+              {Number(withdrawAmount) > totalBalance
+                ? `Insufficient balance. Available: ${formattedTotalBalance}`
+                : <>You will withdraw <span className='font-semibold text-foreground'>{fmt(withdrawAmount)}</span>. Available: {formattedTotalBalance}</>}
             </div>
           )}
           <div className='flex gap-2 mt-1'>
             <Button variant='outline' className='flex-1' onClick={() => { setWithdrawOpen(false); setWithdrawAmount(''); }}>Cancel</Button>
-            <Button className='flex-1' onClick={handleWithdraw} disabled={!withdrawAmount || Number(withdrawAmount) > 250000 || loading}>
+            <Button className='flex-1' onClick={handleWithdraw} disabled={!withdrawAmount || Number(withdrawAmount) > totalBalance || loading}>
               {loading ? 'Processing…' : 'Confirm Withdrawal'}
             </Button>
           </div>

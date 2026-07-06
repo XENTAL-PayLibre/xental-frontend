@@ -52,6 +52,7 @@ export type VirtualAccountResponse = {
   overpaymentKobo: number;
   status: string | null;
   paymentState: string | null;
+  subMerchantId: string | null;
   expiryDateUtc: string | null;
   createdAtUtc: string;
 };
