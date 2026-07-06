@@ -17,6 +17,7 @@ import { useRouter } from 'next/navigation';
 import { postRequest } from '@/lib/http';
 import { clearAuthCookies } from '@/lib/get-token';
 import { cn } from '@/lib/utils';
+import { useProfile } from '@/api/dashboard';
 
 const NAV_ITEMS = [
   { label: 'Home', href: '/dashboard', icon: Home },
@@ -30,6 +31,8 @@ const NAV_ITEMS = [
 export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
+
+  const {data: profile} = useProfile();
 
   async function handleLogout() {
     try {
@@ -106,7 +109,7 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           <div className='w-8 h-8 rounded-full bg-white flex items-center justify-center shrink-0 shadow'>
             <span className='text-[10px] font-bold text-action-blue leading-none'>PL</span>
           </div>
-          <span className='text-white text-sm font-semibold drop-shadow'>PayLibre</span>
+          <span className='text-white text-sm font-semibold drop-shadow'>{profile?.name?.split(' ')[0]}</span>
         </div>
       </div>
     </aside>

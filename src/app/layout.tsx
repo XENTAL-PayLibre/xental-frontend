@@ -40,7 +40,7 @@ export default function RootLayout({
   return (
     <html
       lang='en'
-      className={`${interSans.variable} ${interMono.variable} h-full antialiased`}
+      className={`${interSans.variable} ${interMono.variable} h-full antialiased scroll-smooth`}
     >
       <body className={cn(interSans.className, 'min-h-full flex flex-col')}>
         <Provider>{children}</Provider>
