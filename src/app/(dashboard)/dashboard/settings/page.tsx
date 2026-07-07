@@ -223,7 +223,7 @@ function DevelopersTab() {
     if (!newKeyLabel.trim()) { toast.error('Enter a label for the key'); return; }
     try {
       const res = await createKey.mutateAsync({ label: newKeyLabel.trim(), mode: 'live' });
-      const secret = (res.data as { clientSecret?: string })?.clientSecret;
+      const secret = (res as { clientSecret?: string })?.clientSecret;
       if (secret) toast.success(`Key created — secret: ${secret} (shown once, copy now)`, { duration: 10000 });
       else toast.success('API key created');
       setNewKeyLabel('');

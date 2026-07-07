@@ -52,3 +52,15 @@ export const CreateCustomerSchema = z.object({
   expiryDateUtc: z.string().optional().nullable(),
   subMerchantRef: z.string().optional().nullable(),
 });
+
+export const AdminLoginSchema = z.object({
+  email: z.string().min(1, { message: 'Field is required' }).email({
+    message: 'Invalid email address',
+  }),
+  password: z
+    .string()
+    .min(1, {
+      message: 'Password is required',
+    }),
+  totpCode: z.string().optional(),
+});

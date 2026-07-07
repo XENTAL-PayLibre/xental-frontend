@@ -8,6 +8,7 @@ export const COOKIE_KEYS = {
   refresh_token: 'xnt_refresh',
   has_refresh:   'has_refresh_token',
   user_profile:  'user_profile',
+  admin_token:   'xnt_admin_access',
 } as const;
 
 const ACCESS_TOKEN_EXPIRY_KEY = 'access_token_expires_at';
