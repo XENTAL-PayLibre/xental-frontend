@@ -39,7 +39,7 @@ export function useInviteTeamMember() {
     mutationKey: ['team', 'invite'],
     mutationFn: async (input: TeamMemberInput) => {
       const res = await postRequest<TeamMember, TeamMemberInput>({ url: API_ENDPOINTS.TEAM.BASE, payload: input });
-      return res.data;
+      return res;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: TEAM_QUERY });
@@ -57,7 +57,7 @@ export function useUpdateTeamMember() {
     mutationKey: ['team', 'update'],
     mutationFn: async ({ id, input }: { id: string; input: TeamMemberInput }) => {
       const res = await putRequest<TeamMember, TeamMemberInput>({ url: API_ENDPOINTS.TEAM.ONE(id), payload: input });
-      return res.data;
+      return res;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: TEAM_QUERY });
@@ -89,7 +89,7 @@ export function useResendInvite() {
     mutationKey: ['team', 'resend'],
     mutationFn: async (id: string) => {
       const res = await postRequest<TeamMember, Record<string, never>>({ url: API_ENDPOINTS.TEAM.RESEND(id), payload: {} });
-      return res.data;
+      return res;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: TEAM_QUERY });

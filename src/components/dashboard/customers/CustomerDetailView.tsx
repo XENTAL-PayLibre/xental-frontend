@@ -49,16 +49,15 @@ export function CustomerDetailView({ accountRef }: { accountRef: string }) {
   return (
     <div className='flex flex-col gap-8'>
       {/* Header */}
-      <div className='flex items-center gap-3'>
+      <div className='flex flex-col gap-3'>
         <Link
           href='/dashboard/customers'
-          className='p-2 -ml-2 rounded-full hover:bg-xental-bg transition-colors flex items-center justify-center'
+          className='flex items-center gap-2 text-sm text-xental-text-primary-400 hover:text-foreground transition-colors w-fit'
         >
-          <ArrowLeft className='w-5 h-5 text-foreground' />
+          <ArrowLeft className='w-4 h-4' />
+          Back to customers
         </Link>
-        <h1 className='text-[22px] font-bold text-foreground'>
-          Customer Details
-        </h1>
+        <h1 className='text-2xl font-bold text-foreground'>Customer Details</h1>
       </div>
 
       {/* Profile Summary */}

@@ -19,7 +19,7 @@ export default function PayOutsPage() {
       <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
         <StatCard
           label='Total payouts'
-          value='N0'
+          value='₦0'
           icon='/images/dashboard/pay-out.svg'
         />
         <StatCard
@@ -40,7 +40,8 @@ export default function PayOutsPage() {
           No payout activity
         </h3>
         <p className='text-base text-muted mb-6'>
-          Payouts will appear here once a payout has been processed for your platform
+          Payouts will appear here once a payout has been processed for your
+          platform
         </p>
         <Button
           onClick={() => router.push('/dashboard/customers')}
