@@ -24,7 +24,7 @@ export function useCreateApiKey() {
     mutationKey: ['api-keys', 'create'],
     mutationFn: async (payload: CreateApiKeyPayload) => {
       const res = await postRequest<ApiKey, CreateApiKeyPayload>({ url: API_ENDPOINTS.API_KEYS.BASE, payload });
-      return res.data;
+      return res;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEYS_QUERY });
@@ -43,7 +43,7 @@ export function useRotateApiKey() {
     mutationKey: ['api-keys', 'rotate'],
     mutationFn: async (id: string) => {
       const res = await postRequest<ApiKey, Record<string, never>>({ url: API_ENDPOINTS.API_KEYS.ROTATE(id), payload: {} });
-      return res.data;
+      return res;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEYS_QUERY });

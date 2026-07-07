@@ -104,30 +104,35 @@ function getApi(): AxiosInstance {
 }
 
 // ── Request helpers ────────────────────────────────────────────────────────
-export const getRequest = async <T>(params: { url: string; signal?: AbortSignal }) => {
-  const { data } = await getApi().get<T>(params.url, { signal: params.signal });
+export const getRequest = async <T>(params: { url: string; signal?: AbortSignal; headers?: Record<string, string> }) => {
+  const { data } = await getApi().get<T>(params.url, { signal: params.signal, headers: params.headers });
   return data;
 };
 
-export const postRequest = async <T, P>(params: {
+export const postRequest = async <T, P = void>(params: {
   url: string;
-  payload: P;
+  payload?: P;
   signal?: AbortSignal;
+  headers?: Record<string, string>;
 }) => {
-  return getApi().post<T>(params.url, params.payload, { signal: params.signal });
+  const { data } = await getApi().post<T>(params.url, params.payload, { signal: params.signal, headers: params.headers });
+  return data;
 };
 
-export const patchRequest = async <T, P>(params: { url: string; payload: P }) => {
-  return getApi().patch<T>(params.url, params.payload);
+export const patchRequest = async <T, P = void>(params: { url: string; payload?: P }) => {
+  const { data } = await getApi().patch<T>(params.url, params.payload);
+  return data;
 };
 
 /** Multipart POST. Let the browser/axios set the Content-Type boundary automatically. */
 export const postFormRequest = async <T>(params: { url: string; form: FormData }) => {
-  return getApi().post<T>(params.url, params.form);
+  const { data } = await getApi().post<T>(params.url, params.form);
+  return data;
 };
 
-export const putRequest = async <T, P>(params: { url: string; payload: P }) => {
-  return getApi().put<T>(params.url, params.payload);
+export const putRequest = async <T, P = void>(params: { url: string; payload?: P }) => {
+  const { data } = await getApi().put<T>(params.url, params.payload);
+  return data;
 };
 
 export const deleteRequest = async <T>(params: { url: string }) => {

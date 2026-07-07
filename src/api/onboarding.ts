@@ -74,7 +74,7 @@ export function useSubmitDeveloperKyc() {
       const res = await postRequest<OnboardingStatus, DeveloperKycInput>({
         url: API_ENDPOINTS.ONBOARDING.DEVELOPER, payload: input,
       });
-      return res.data;
+      return res;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: STATUS_QUERY }),
   });
@@ -88,7 +88,7 @@ export function useSubmitBusinessKyb() {
       const res = await postRequest<OnboardingStatus, BusinessKybInput>({
         url: API_ENDPOINTS.ONBOARDING.BUSINESS, payload: input,
       });
-      return res.data;
+      return res;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: STATUS_QUERY }),
   });
@@ -114,7 +114,7 @@ export function useSubmitOnboarding() {
       const res = await postRequest<OnboardingStatus, { attestationAccepted: boolean }>({
         url: API_ENDPOINTS.ONBOARDING.SUBMIT, payload: { attestationAccepted },
       });
-      return res.data;
+      return res;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: STATUS_QUERY }),
   });

@@ -35,7 +35,7 @@ export function useCreateWebhookEndpoint() {
     mutationKey: ['webhook-endpoints', 'create'],
     mutationFn: async (url: string) => {
       const res = await postRequest<WebhookEndpointCreated, { url: string }>({ url: API_ENDPOINTS.WEBHOOKS.BASE, payload: { url } });
-      return res.data;
+      return res;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: WEBHOOKS_QUERY });
