@@ -10,6 +10,25 @@ const protectedRoutes = ['/dashboard'];
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // --- Admin Route Protection ---
+  if (pathname.startsWith('/admin')) {
+    const hasAdminCookie = request.cookies.has('xnt_admin_access');
+    const isAdminAuthRoute = pathname.startsWith('/admin/login');
+    
+    if (hasAdminCookie && isAdminAuthRoute) {
+      return NextResponse.redirect(new URL('/admin/reconciliation', request.url));
+    }
+    
+    if (!hasAdminCookie && !isAdminAuthRoute) {
+      const adminLoginUrl = new URL('/admin/login', request.url);
+      adminLoginUrl.searchParams.set('callbackUrl', pathname);
+      return NextResponse.redirect(adminLoginUrl);
+    }
+    
+    return NextResponse.next();
+  }
+
+  // --- Business Client Route Protection ---
   // Gate solely on the first-party session sentinel the frontend sets on login and clears on
   // logout. We must NOT fall back to the backend's xnt_refresh cookie: it is HttpOnly and the
   // frontend cannot delete it, so on same-site deploys a logged-out user would be bounced from
