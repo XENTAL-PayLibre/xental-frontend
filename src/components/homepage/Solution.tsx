@@ -1,7 +1,9 @@
+'use client';
 import React from 'react';
 import SectionHeader from '../ui/SectionHeader';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
 const solutions = [
   {
@@ -48,26 +50,58 @@ const solutions = [
   },
 ];
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+};
+
 const Solution = () => {
   return (
-    <section className='bg-white pt-10 pb-20'>
+    <section id="solution" className='bg-white pt-10 pb-20 scroll-mt-16'>
       <div className='container'>
-        <SectionHeader
-          badge='The Solution'
-          title={
-            <h2 className='text-3xl font-semibold text-muted-foreground leading-[1.2] lg:text-5xl'>
-              Built for Modern Payment <br className='hidden md:block' />
-              Collection
-            </h2>
-          }
-          description={
-            'Enterprise-grade infrastructure that automates every step of the payment lifecycle'
-          }
-        />
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={{
+            hidden: { opacity: 0, y: 20 },
+            visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
+          }}
+        >
+          <SectionHeader
+            badge='The Solution'
+            title={
+              <h2 className='text-3xl font-semibold text-muted-foreground leading-[1.2] lg:text-5xl'>
+                Built for Modern Payment <br className='hidden md:block' />
+                Collection
+              </h2>
+            }
+            description={
+              'Enterprise-grade infrastructure that automates every step of the payment lifecycle'
+            }
+          />
+        </motion.div>
 
-        <div className='grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3'>
+        <motion.div 
+          className='grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3'
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={containerVariants}
+        >
           {solutions.map((solution) => (
-            <div
+            <motion.div
+              variants={itemVariants}
               key={solution.id}
               className={cn(
                 'min-h-[250px] p-6 flex flex-col gap-4 rounded-[14px]',
@@ -91,9 +125,9 @@ const Solution = () => {
               >
                 {solution.description}
               </p>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );

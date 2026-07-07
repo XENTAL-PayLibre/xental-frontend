@@ -30,19 +30,41 @@ const Navbar = () => {
       <div className='container flex items-center justify-between'>
         <Logo />
 
-        <div className='hidden md:flex items-center justify-center gap-12'>
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className='text-muted-foreground font-medium hover:text-primary'
-            >
-              {link.label}
-            </Link>
-          ))}
+        <div className='hidden md:flex items-center justify-center gap-4 lg:gap-12'>
+          {NAV_LINKS.map((link) => {
+            const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+              if (pathname === '/' && link.href.startsWith('/#')) {
+                e.preventDefault();
+                const id = link.href.substring(2);
+                const element = document.getElementById(id);
+                if (element) {
+                  window.history.pushState(null, '', `/#${id}`);
+                  element.scrollIntoView({ behavior: 'smooth' });
+                }
+              }
+            };
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={handleLinkClick}
+                className='text-muted-foreground font-medium hover:text-primary'
+              >
+                {link.label}
+              </Link>
+            );
+          })}
         </div>
 
-        <div className='flex items-center'>
+        <div className='flex items-center gap-2'>
+          <Button
+            size='lg'
+            variant='outline'
+            asChild
+            className='w-[80px] lg:w-[100px] hidden md:inline-flex md:border-transparent md:hover:bg-transparent lg:border-input lg:hover:bg-accent lg:hover:text-accent-foreground rounded-[8px] font-semibold text-foreground transition-colors'
+          >
+            <Link href='/login'>Log in</Link>
+          </Button>
           <Button
             size='lg'
             asChild
