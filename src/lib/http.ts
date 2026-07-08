@@ -28,10 +28,18 @@ export function resetAuthRefreshState() {
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function isAuthEndpoint(url: string) {
+  // Exact match (strip query string) to avoid prefix collisions,
+  // e.g. includes('/developers/login') would wrongly match '/developers/login/verify'.
+  // Guards both regular and admin auth routes so a 401 on wrong credentials
+  // never triggers the refresh → logoutUser() → /login redirect.
+  const exact = url.split('?')[0];
   return (
-    url.includes(API_ENDPOINTS.AUTH.LOGIN) ||
-    url.includes(API_ENDPOINTS.AUTH.REGISTER) ||
-    url.includes(API_ENDPOINTS.AUTH.REFRESH)
+    exact === API_ENDPOINTS.AUTH.LOGIN ||
+    exact === API_ENDPOINTS.AUTH.LOGIN_VERIFY ||
+    exact === API_ENDPOINTS.AUTH.REGISTER ||
+    exact === API_ENDPOINTS.AUTH.REFRESH ||
+    exact === API_ENDPOINTS.ADMIN.LOGIN ||
+    exact === API_ENDPOINTS.ADMIN.LOGIN_VERIFY
   );
 }
 

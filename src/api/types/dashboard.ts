@@ -16,6 +16,16 @@ export type InsightsResponse = {
   partiallyPaidAccounts: number;
 };
 
+export type TransactionSummaryResponse = {
+  total: number;
+  totalPayinsKobo: number;
+  successful: number;
+  failed: number;
+  pendingReview: number;
+  successfulKobo: number;
+  netCreditedKobo: number;
+};
+
 export type SubMerchantResponse = {
   id: string;
   name: string | null;

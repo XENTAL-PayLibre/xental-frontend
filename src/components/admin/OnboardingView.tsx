@@ -3,59 +3,16 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useAdminOnboardingQueue } from '@/api/admin';
-import type { AdminOnboardingApplication } from '@/api/types/admin';
 import FilterDropdown from '@/components/dashboard/FilterDropdown';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Pagination } from '@/components/ui/Pagination';
 
 const PAGE_SIZE = 10;
 
-const MOCK_DATA: AdminOnboardingApplication[] = [
-  {
-    tenantId: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
-    tenantEmail: 'founder@fintech.io',
-    tier: 'starter',
-    developerKycStatus: 'UnderReview',
-    businessKybStatus: 'UnderReview',
-    submittedAtUtc: '2026-07-06T23:46:32.056Z'
-  },
-  {
-    tenantId: '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d',
-    tenantEmail: 'admin@acmecorp.com',
-    tier: 'enterprise',
-    developerKycStatus: 'Approved',
-    businessKybStatus: 'Approved',
-    submittedAtUtc: '2026-07-05T14:20:00.000Z'
-  },
-  {
-    tenantId: '1c2a3b4c-5d6e-7f8g-9h0i-1j2k3l4m5n6o',
-    tenantEmail: 'contact@startup.io',
-    tier: 'pro',
-    developerKycStatus: 'Rejected',
-    businessKybStatus: 'UnderReview',
-    submittedAtUtc: '2026-07-04T09:15:22.000Z'
-  },
-  {
-    tenantId: 'a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6',
-    tenantEmail: 'info@localshop.com',
-    tier: 'starter',
-    developerKycStatus: 'InfoRequested',
-    businessKybStatus: 'InfoRequested',
-    submittedAtUtc: '2026-07-03T11:45:10.000Z'
-  }
-];
-
 export default function OnboardingView() {
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
-  const { isLoading } = useAdminOnboardingQueue(statusFilter);
-
-  // Use mock data for UI visualization
-  const queue = MOCK_DATA.filter(item =>
-    !statusFilter ||
-    item.developerKycStatus === statusFilter ||
-    item.businessKybStatus === statusFilter
-  );
+  const { data: queue = [], isLoading } = useAdminOnboardingQueue(statusFilter);
 
   const totalPages = Math.max(1, Math.ceil(queue.length / PAGE_SIZE));
   const paginated = queue.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
