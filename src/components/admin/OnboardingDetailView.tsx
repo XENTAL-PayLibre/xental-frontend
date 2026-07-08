@@ -17,16 +17,18 @@ export default function OnboardingDetailView({ tenantId }: { tenantId: string })
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'approve' | 'reject' | 'request-info'>('reject');
   const [reason, setReason] = useState('');
+  const [track, setTrack] = useState<'DeveloperKyc' | 'BusinessKyb' | ''>('');
 
   const handleOpenModal = (type: 'approve' | 'reject' | 'request-info') => {
     setModalType(type);
     setReason('');
+    setTrack('');
     setModalOpen(true);
   };
 
   const submitModalAction = () => {
     if (modalType !== 'approve' && !reason.trim()) return alert('Reason is required');
-    performAction({ tenantId, action: modalType, payload: { reason } }, {
+    performAction({ tenantId, action: modalType, payload: { reason, track } }, {
       onSuccess: () => {
         setModalOpen(false);
         router.push('/admin/onboarding');
@@ -209,18 +211,33 @@ export default function OnboardingDetailView({ tenantId }: { tenantId: string })
           <p className="text-sm text-xental-text-primary-400">
             {modalConfig.desc}
           </p>
-          <textarea 
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder="Enter a detailed reason..."
-            className="w-full min-h-[120px] rounded-lg border border-stroke-2 bg-transparent px-3 py-2 text-sm text-foreground focus:outline-none focus:border-action-blue resize-y"
-            autoFocus
-          />
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-foreground">Track</label>
+            <select
+              value={track}
+              onChange={(e) => setTrack(e.target.value as 'DeveloperKyc' | 'BusinessKyb' | '')}
+              className="w-full rounded-lg border border-stroke-2 bg-transparent px-3 py-2 text-sm text-foreground focus:outline-none focus:border-action-blue"
+            >
+              <option value="" disabled>Select a track</option>
+              <option value="DeveloperKyc">Developer KYC</option>
+              <option value="BusinessKyb">Business KYB</option>
+            </select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-foreground">Reason / Note</label>
+            <textarea 
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Enter a detailed reason..."
+              className="w-full min-h-[120px] rounded-lg border border-stroke-2 bg-transparent px-3 py-2 text-sm text-foreground focus:outline-none focus:border-action-blue resize-y"
+              autoFocus
+            />
+          </div>
           <div className="flex justify-end gap-3 mt-4">
             <Button variant="outline" onClick={() => setModalOpen(false)}>Cancel</Button>
             <Button 
               onClick={submitModalAction} 
-              disabled={isPending || (modalType !== 'approve' && !reason.trim())}
+              disabled={isPending || !track || (modalType !== 'approve' && !reason.trim())}
               className={modalConfig.btnClass}
             >
               {modalConfig.btnText}
