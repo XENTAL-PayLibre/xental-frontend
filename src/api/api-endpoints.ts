@@ -12,6 +12,7 @@ export const API_ENDPOINTS = {
     LOGOUT: '/developers/logout',
     FORGOT_PASSWORD: '/developers/forgot-password',
     RESET_PASSWORD: '/developers/reset-password',
+    CHANGE_PASSWORD: '/developers/change-password',
     VERIFY_EMAIL: '/developers/verify-email',
     TOKEN: '/auth/token',
   },
@@ -77,6 +78,11 @@ export const API_ENDPOINTS = {
   RULES: {
     BASE: '/rules',
     ONE: (id: string) => `/rules/${id}`,
+  },
+  SUB_MERCHANTS: {
+    BASE: '/sub-merchants',
+    PAYOUT: (id: string) => `/sub-merchants/${id}/payout`,
+    BALANCE: (id: string) => `/sub-merchants/${id}/balance`,
   },
   ACCOUNT_INSIGHTS: {
     BASE: '/insights',

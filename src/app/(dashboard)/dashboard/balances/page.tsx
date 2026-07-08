@@ -1,11 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Wallet } from 'lucide-react';
-import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import Modal from '@/components/ui/Modal';
 import { cn } from '@/lib/utils';
+import { useInsights } from '@/api/dashboard';
+import { useSettlementConfig } from '@/api/settlement';
+import { useCreateTransfer } from '@/api/transfers';
 
 function AmountInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
@@ -27,40 +30,38 @@ function FieldLabel({ label }: { label: string }) {
   return <label className='text-xs font-medium text-xental-text-primary-500'>{label}</label>;
 }
 
-import { useInsights } from '@/api/dashboard';
-
 export default function BalancesPage() {
   const { data: insights, isLoading: insightsLoading } = useInsights();
-  
-  const [depositOpen, setDepositOpen] = useState(false);
-  const [withdrawOpen, setWithdrawOpen] = useState(false);
-  const [depositAmount, setDepositAmount] = useState('');
-  const [withdrawAmount, setWithdrawAmount] = useState('');
-  const [loading, setLoading] = useState(false);
+  const { data: settlement } = useSettlementConfig();
+  const withdraw = useCreateTransfer();
 
-  const fmt = (v: string) => v ? `₦${Number(v).toLocaleString()}` : '';
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+
+  const fmt = (v: string) => (v ? `₦${Number(v).toLocaleString()}` : '');
 
   const totalBalance = (insights?.totalCollectedKobo || 0) / 100;
   const formattedTotalBalance = `₦${totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-  const handleDeposit = async () => {
-    if (!depositAmount) return;
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setLoading(false);
-    setDepositOpen(false);
-    setDepositAmount('');
-    toast.success(`Deposit of ${fmt(depositAmount)} initiated successfully`);
-  };
+  const hasSettlementAccount = !!(settlement?.settlementAccountNumber && settlement?.settlementBankCode);
 
-  const handleWithdraw = async () => {
-    if (!withdrawAmount) return;
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setLoading(false);
-    setWithdrawOpen(false);
-    setWithdrawAmount('');
-    toast.success(`Withdrawal of ${fmt(withdrawAmount)} initiated successfully`);
+  const handleWithdraw = () => {
+    if (!withdrawAmount || !hasSettlementAccount) return;
+    withdraw.mutate(
+      {
+        merchantTxRef: `withdraw_${Date.now()}`,
+        amountKobo: Number(withdrawAmount) * 100,
+        accountNumber: settlement!.settlementAccountNumber!,
+        bankCode: settlement!.settlementBankCode!,
+        narration: 'Balance withdrawal',
+      },
+      {
+        onSuccess: () => {
+          setWithdrawOpen(false);
+          setWithdrawAmount('');
+        },
+      }
+    );
   };
 
   return (
@@ -79,69 +80,56 @@ export default function BalancesPage() {
           {insightsLoading ? '...' : formattedTotalBalance}
         </p>
         <div className='flex items-center gap-2'>
-          <Button size='sm' className='px-5' onClick={() => setDepositOpen(true)}>Deposit</Button>
-          <Button size='sm' variant='secondary' className='px-5 bg-xental-secondary-500 text-white hover:bg-xental-secondary-600' onClick={() => setWithdrawOpen(true)}>
+          <Button size='sm' className='px-5' onClick={() => setWithdrawOpen(true)}>
             Withdraw
           </Button>
         </div>
       </div>
 
-      {/* Deposit Modal */}
-      <Modal open={depositOpen} onClose={() => { setDepositOpen(false); setDepositAmount(''); }} title='Deposit Funds'>
-        <div className='flex flex-col gap-4'>
-          <p className='text-xs text-xental-text-primary-400 -mt-3'>Enter the amount you want to deposit into your Xental wallet.</p>
-          <div className='flex flex-col gap-1'>
-            <FieldLabel label='Amount' />
-            <AmountInput value={depositAmount} onChange={setDepositAmount} />
-          </div>
-          <div className='flex flex-col gap-1'>
-            <FieldLabel label='Destination account' />
-            <div className='h-11 px-3 rounded-lg border border-stroke-2 bg-xental-bg flex items-center text-sm text-xental-text-primary-500'>
-              Xental Wallet · AjoVault
-            </div>
-          </div>
-          {depositAmount && (
-            <div className='bg-xental-bg rounded-lg px-3 py-2.5 text-xs text-xental-text-primary-500'>
-              You will deposit <span className='font-semibold text-foreground'>{fmt(depositAmount)}</span> into your wallet.
-            </div>
-          )}
-          <div className='flex gap-2 mt-1'>
-            <Button variant='outline' className='flex-1' onClick={() => { setDepositOpen(false); setDepositAmount(''); }}>Cancel</Button>
-            <Button className='flex-1' onClick={handleDeposit} disabled={!depositAmount || loading}>
-              {loading ? 'Processing…' : 'Confirm Deposit'}
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
       {/* Withdraw Modal */}
       <Modal open={withdrawOpen} onClose={() => { setWithdrawOpen(false); setWithdrawAmount(''); }} title='Withdraw Funds'>
         <div className='flex flex-col gap-4'>
           <p className='text-xs text-xental-text-primary-400 -mt-3'>Funds will be sent to your registered settlement account.</p>
-          <div className='flex flex-col gap-1'>
-            <FieldLabel label='Amount' />
-            <AmountInput value={withdrawAmount} onChange={setWithdrawAmount} />
-          </div>
-          <div className='flex flex-col gap-1'>
-            <FieldLabel label='Settlement account' />
-            <div className='h-11 px-3 rounded-lg border border-stroke-2 bg-xental-bg flex flex-col justify-center'>
-              <p className='text-sm text-foreground font-medium'>PayLibre · United Bank of Africa</p>
-              <p className='text-xs text-xental-text-primary-400'>123456789</p>
-            </div>
-          </div>
-          {withdrawAmount && (
-            <div className={cn('rounded-lg px-3 py-2.5 text-xs', Number(withdrawAmount) > totalBalance ? 'bg-red-50 text-destructive' : 'bg-xental-bg text-xental-text-primary-500')}>
-              {Number(withdrawAmount) > totalBalance
-                ? `Insufficient balance. Available: ${formattedTotalBalance}`
-                : <>You will withdraw <span className='font-semibold text-foreground'>{fmt(withdrawAmount)}</span>. Available: {formattedTotalBalance}</>}
+
+          {hasSettlementAccount ? (
+            <>
+              <div className='flex flex-col gap-1'>
+                <FieldLabel label='Amount' />
+                <AmountInput value={withdrawAmount} onChange={setWithdrawAmount} />
+              </div>
+              <div className='flex flex-col gap-1'>
+                <FieldLabel label='Settlement account' />
+                <div className='h-11 px-3 rounded-lg border border-stroke-2 bg-xental-bg flex flex-col justify-center'>
+                  <p className='text-sm text-foreground font-medium'>
+                    {settlement?.settlementAccountName ?? 'Settlement account'} · Bank {settlement?.settlementBankCode}
+                  </p>
+                  <p className='text-xs text-xental-text-primary-400'>{settlement?.settlementAccountNumber}</p>
+                </div>
+              </div>
+              {withdrawAmount && (
+                <div className={cn('rounded-lg px-3 py-2.5 text-xs', Number(withdrawAmount) > totalBalance ? 'bg-red-50 text-destructive' : 'bg-xental-bg text-xental-text-primary-500')}>
+                  {Number(withdrawAmount) > totalBalance
+                    ? `Insufficient balance. Available: ${formattedTotalBalance}`
+                    : <>You will withdraw <span className='font-semibold text-foreground'>{fmt(withdrawAmount)}</span>. Available: {formattedTotalBalance}</>}
+                </div>
+              )}
+              <div className='flex gap-2 mt-1'>
+                <Button variant='outline' className='flex-1' onClick={() => { setWithdrawOpen(false); setWithdrawAmount(''); }}>Cancel</Button>
+                <Button className='flex-1' onClick={handleWithdraw} disabled={!withdrawAmount || Number(withdrawAmount) > totalBalance || withdraw.isPending}>
+                  {withdraw.isPending ? 'Processing…' : 'Confirm Withdrawal'}
+                </Button>
+              </div>
+            </>
+          ) : (
+            <div className='flex flex-col gap-3'>
+              <div className='bg-xental-bg rounded-lg px-3 py-2.5 text-xs text-xental-text-primary-500'>
+                No settlement account is set. Add one before you can withdraw.
+              </div>
+              <Link href='/dashboard/settings' className='self-end'>
+                <Button size='sm'>Go to Settings</Button>
+              </Link>
             </div>
           )}
-          <div className='flex gap-2 mt-1'>
-            <Button variant='outline' className='flex-1' onClick={() => { setWithdrawOpen(false); setWithdrawAmount(''); }}>Cancel</Button>
-            <Button className='flex-1' onClick={handleWithdraw} disabled={!withdrawAmount || Number(withdrawAmount) > totalBalance || loading}>
-              {loading ? 'Processing…' : 'Confirm Withdrawal'}
-            </Button>
-          </div>
         </div>
       </Modal>
     </div>
