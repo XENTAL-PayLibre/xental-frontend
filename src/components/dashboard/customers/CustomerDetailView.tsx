@@ -12,6 +12,7 @@ import { useTransactions, useRefundTransaction } from '@/api/dashboard';
 import { useVirtualAccount, useDeleteVirtualAccount } from '@/api/virtual-accounts';
 import { useCreateCheckoutSession } from '@/api/checkout';
 import { useHoldSettlement, useReleaseSettlement } from '@/api/settlement';
+import { useSubMerchantsList } from '@/api/sub-merchants';
 import { CustomerSubscriptions } from './CustomerSubscriptions';
 
 type Tab = 'Recent transactions' | 'Subscriptions' | 'Profile';
@@ -45,6 +46,8 @@ export function CustomerDetailView({ accountRef }: { accountRef: string }) {
   const holdSettlement = useHoldSettlement();
   const releaseSettlement = useReleaseSettlement();
   const refund = useRefundTransaction();
+  const { data: subMerchants = [] } = useSubMerchantsList();
+  const subMerchant = subMerchants.find((s) => s.id === profile?.subMerchantId);
 
   const [tab, setTab] = useState<Tab>('Recent transactions');
   const [dateFilter, setDateFilter] = useState('');
@@ -320,6 +323,10 @@ export function CustomerDetailView({ accountRef }: { accountRef: string }) {
                 <DetailBlock label='Email' value={profile.customerEmail ?? '—'} />
                 <DetailBlock label='Phone number' value={profile.customerPhone ?? '—'} />
                 <DetailBlock label='Customer reference' value={profile.accountRef ?? '—'} />
+                <DetailBlock
+                  label='Sub-merchant'
+                  value={subMerchant ? `${subMerchant.name}${subMerchant.reference ? ` (${subMerchant.reference})` : ''}` : 'Main account'}
+                />
                 <DetailBlock label='Date created' value={formatDate(profile.createdAtUtc)} />
               </div>
 

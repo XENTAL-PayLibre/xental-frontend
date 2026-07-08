@@ -36,6 +36,7 @@ import {
 } from '@/api/team';
 import { useSettlementConfig, useUpdateSettlementConfig, useSplits, useSetSplits } from '@/api/settlement';
 import { useRules, useCreateRule, useDeleteRule } from '@/api/rules';
+import { useBankLookup } from '@/api/transfers';
 import type { SplitLegInput } from '@/api/types/dashboard';
 
 type Tab = 'Profile' | 'Team' | 'Developers' | 'Settlement' | 'Splits' | 'Security';
@@ -62,13 +63,14 @@ function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void 
   );
 }
 
-function InputField({ label, value, onChange, disabled, placeholder }: { label: string; value: string; onChange?: (v: string) => void; disabled?: boolean; placeholder?: string }) {
+function InputField({ label, value, onChange, onBlur, disabled, placeholder }: { label: string; value: string; onChange?: (v: string) => void; onBlur?: () => void; disabled?: boolean; placeholder?: string }) {
   return (
     <div>
       <label className='block text-xs text-xental-text-primary-400 mb-1'>{label}</label>
       <input
         value={value}
         onChange={(e) => onChange?.(e.target.value)}
+        onBlur={onBlur}
         disabled={disabled}
         placeholder={placeholder}
         className={cn(
@@ -565,6 +567,7 @@ function SettlementTab() {
   const { data: rules = [] } = useRules();
   const createRule = useCreateRule();
   const deleteRule = useDeleteRule();
+  const bankLookup = useBankLookup();
 
   const [form, setForm] = useState({ accountNumber: '', bankCode: '', accountName: '', autoSettle: 'Off', minPayout: '' });
   const [rule, setRule] = useState({ trigger: 'Overpaid', action: 'Hold', threshold: '', minRisk: '', priority: '1' });
@@ -582,6 +585,15 @@ function SettlementTab() {
   }, [config]);
 
   const set = (k: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  // Auto-resolve the account holder name from account number + bank code.
+  const resolveAccountName = () => {
+    if (form.accountNumber.trim().length < 10 || !form.bankCode.trim()) return;
+    bankLookup.mutate(
+      { accountNumber: form.accountNumber.trim(), bankCode: form.bankCode.trim() },
+      { onSuccess: (res) => setForm((f) => ({ ...f, accountName: res.accountName })) }
+    );
+  };
 
   const handleSaveConfig = () => {
     updateConfig.mutate({
@@ -614,9 +626,9 @@ function SettlementTab() {
       <div>
         <h3 className='text-sm font-semibold text-foreground mb-4'>Settlement account</h3>
         <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
-          <InputField label='Account number' value={form.accountNumber} onChange={set('accountNumber')} placeholder='0123456789' />
-          <InputField label='Bank code' value={form.bankCode} onChange={set('bankCode')} placeholder='000014' />
-          <InputField label='Account name' value={form.accountName} onChange={set('accountName')} placeholder='Business name' />
+          <InputField label='Account number' value={form.accountNumber} onChange={set('accountNumber')} onBlur={resolveAccountName} placeholder='0123456789' />
+          <InputField label='Bank code' value={form.bankCode} onChange={set('bankCode')} onBlur={resolveAccountName} placeholder='000014' />
+          <InputField label='Account name' value={bankLookup.isPending ? 'Resolving…' : form.accountName} disabled placeholder='Auto-resolved from account + bank' />
           <InputField label='Minimum payout (₦)' value={form.minPayout} onChange={set('minPayout')} placeholder='0' />
           <SelectField label='Auto-settle' value={form.autoSettle} onChange={set('autoSettle')} options={['Off', 'On']} />
         </div>
