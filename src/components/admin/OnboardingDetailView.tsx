@@ -83,7 +83,11 @@ export default function OnboardingDetailView({ tenantId }: { tenantId: string })
               </div>
               <div>
                 <p className='text-xs text-xental-text-primary-400 mb-1'>Submitted</p>
-                <p className='text-sm font-medium'>{new Date(detail.summary.submittedAtUtc).toLocaleString()}</p>
+                <p className='text-sm font-medium'>
+                  {detail.summary.submittedAtUtc && new Date(detail.summary.submittedAtUtc).getFullYear() > 1970 
+                    ? new Date(detail.summary.submittedAtUtc).toLocaleString() 
+                    : '—'}
+                </p>
               </div>
               <div>
                 <p className='text-xs text-xental-text-primary-400 mb-1'>KYC Status</p>
