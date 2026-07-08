@@ -31,7 +31,22 @@ export type SubMerchantResponse = {
   name: string | null;
   reference: string | null;
   status: string | null;
+  hasPayoutAccount?: boolean;
+  settlementBankName?: string | null;
+  settlementBankCode?: string | null;
+  settlementAccountNumber?: string | null;
+  settlementAccountName?: string | null;
+  platformFeeBps?: number;
   createdAtUtc: string;
+};
+
+export type SubMerchantBalanceResponse = {
+  subMerchantId: string;
+  reference: string;
+  collectedKobo: number;
+  settledKobo: number;
+  pendingKobo: number;
+  virtualAccounts: number;
 };
 
 export type TransactionResponse = {
@@ -152,6 +167,28 @@ export type EscrowHoldResponse = {
   state: string;
   releaseCondition: string | null;
   createdAtUtc: string;
+};
+
+export type SplitLegResponse = {
+  id: string;
+  beneficiaryName: string;
+  accountNumber: string;
+  bankCode: string;
+  basis: string; // "Percentage" | "Flat"
+  shareBps: number;
+  flatKobo: number;
+  priority: number;
+  enabled: boolean;
+};
+
+export type SplitLegInput = {
+  beneficiaryName: string;
+  accountNumber: string;
+  bankCode: string;
+  basis: string;
+  shareBps: number;
+  flatKobo: number;
+  priority: number;
 };
 
 export type SettlementConfigResponse = {

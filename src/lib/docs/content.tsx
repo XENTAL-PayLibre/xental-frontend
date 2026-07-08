@@ -163,11 +163,7 @@ export const SECTION_CONTENT: Record<string, SectionContent> = {
   },
 
   'agent-discovery': {
-    intro: <>A compact, machine-readable capability map at <C>/.well-known/llms.txt</C> so a developer can point an AI agent at Xental and have it wire the integration. The full contract remains the OpenAPI document.</>,
-  },
-
-  health: {
-    intro: <><C>/health</C> is liveness (always 200 if the process is up). <C>/ready</C> is readiness (200 only when the database is reachable) — use it for load-balancer health checks.</>,
+    intro: <>A compact, machine-readable capability map at <C>/.well-known/llms.txt</C> so a developer can point an AI agent at Xental and have it wire the integration.</>,
   },
 };
 

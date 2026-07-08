@@ -1,12 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { Plus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import StatCard from '@/components/dashboard/StatCard';
 import { cn, koboToNaira, formatDate } from '@/lib/utils';
 import { useTransfers } from '@/api/transfers';
-import { SendPayoutModal } from '@/components/dashboard/payouts/SendPayoutModal';
 
 const STATUS_BADGE: Record<string, string> = {
   Completed: 'bg-green-50 text-success',
@@ -22,7 +18,6 @@ const isFailed = (s: string | null) => /fail/i.test(s ?? '');
 
 export default function PayOutsPage() {
   const { data: transfers = [], isLoading } = useTransfers();
-  const [open, setOpen] = useState(false);
 
   const total = transfers.reduce((sum, t) => sum + t.amountKobo, 0);
   const successful = transfers.filter((t) => isSuccess(t.status)).length;
@@ -30,16 +25,11 @@ export default function PayOutsPage() {
 
   return (
     <div className='flex flex-col gap-8 h-full'>
-      <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-3'>
-        <div>
-          <h1 className='text-[22px] font-bold text-foreground'>Pay-outs</h1>
-          <p className='text-sm text-xental-text-primary-400 mt-0.5'>
-            Monitor and track all outgoing payments from your platform
-          </p>
-        </div>
-        <Button onClick={() => setOpen(true)} className='gap-1.5 bg-action-blue hover:bg-action-blue/90'>
-          <Plus className='w-4 h-4' /> Send payout
-        </Button>
+      <div>
+        <h1 className='text-[22px] font-bold text-foreground'>Pay-outs</h1>
+        <p className='text-sm text-xental-text-primary-400 mt-0.5'>
+          Successful withdrawals to your settlement account
+        </p>
       </div>
 
       <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
@@ -84,8 +74,6 @@ export default function PayOutsPage() {
           </table>
         </div>
       </div>
-
-      <SendPayoutModal open={open} onClose={() => setOpen(false)} />
     </div>
   );
 }
