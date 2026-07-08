@@ -42,7 +42,6 @@ export const LoginSchema = z.object({
 });
 
 export const CreateCustomerSchema = z.object({
-  accountRef: z.string().min(1, { message: 'Account Reference is required' }),
   name: z.string().min(1, { message: 'Full Name is required' }),
   email: z.string().min(1, { message: 'Email is required' }).email({ message: 'Invalid email address' }),
   phone: z.string()

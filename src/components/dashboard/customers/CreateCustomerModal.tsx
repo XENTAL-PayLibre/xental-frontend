@@ -26,7 +26,6 @@ export function CreateCustomerModal({ open, onClose }: CreateCustomerModalProps)
   const form = useForm<z.infer<typeof CreateCustomerSchema>>({
     resolver: standardSchemaResolver(CreateCustomerSchema),
     defaultValues: {
-      accountRef: '',
       name: '',
       email: '',
       phone: '',
@@ -39,7 +38,7 @@ export function CreateCustomerModal({ open, onClose }: CreateCustomerModalProps)
   const onSubmit = (values: z.infer<typeof CreateCustomerSchema>) => {
     createCustomer.mutate(
       {
-        accountRef: values.accountRef,
+        // accountRef is omitted — the backend generates a unique reference.
         name: values.name,
         email: values.email,
         phone: values.phone,
@@ -75,38 +74,21 @@ export function CreateCustomerModal({ open, onClose }: CreateCustomerModalProps)
     >
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4 mt-2'>
-          <div className='grid grid-cols-2 gap-4'>
-            <FormField
-              control={form.control}
-              name='accountRef'
-              render={({ field }) => (
-                <FormItem>
-                  <label className='mb-1 block text-xs font-medium text-foreground'>
-                    Account Reference <span className='text-destructive'>*</span>
-                  </label>
-                  <FormControl>
-                    <input {...field} placeholder='CUST-123' className={inputClass} />
-                  </FormControl>
-                  <FormMessage className='text-[10px]' />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name='name'
-              render={({ field }) => (
-                <FormItem>
-                  <label className='mb-1 block text-xs font-medium text-foreground'>
-                    Full Name <span className='text-destructive'>*</span>
-                  </label>
-                  <FormControl>
-                    <input {...field} placeholder='John Doe' className={inputClass} />
-                  </FormControl>
-                  <FormMessage className='text-[10px]' />
-                </FormItem>
-              )}
-            />
-          </div>
+          <FormField
+            control={form.control}
+            name='name'
+            render={({ field }) => (
+              <FormItem>
+                <label className='mb-1 block text-xs font-medium text-foreground'>
+                  Full Name <span className='text-destructive'>*</span>
+                </label>
+                <FormControl>
+                  <input {...field} placeholder='John Doe' className={inputClass} />
+                </FormControl>
+                <FormMessage className='text-[10px]' />
+              </FormItem>
+            )}
+          />
 
           <div className='grid grid-cols-2 gap-4'>
             <FormField
