@@ -39,9 +39,13 @@ export const SECTION_CONTENT: Record<string, SectionContent> = {
 
   transactions: {
     intro: <>Every reconciled inflow is written as an immutable transaction. The list is your ledger — statuses reflect the reconciliation rule book.</>,
+    notes: {
+      'POST /api/v1/transactions/{reference}/refund': 'Refunds an overpayment surplus back to the payer. Sends only the amount still held for the account (never double-spends against settlement), releases any overpayment hold, and is idempotent per deposit. The destination is pre-filled from the payer’s captured source account, or supply accountNumber + bankCode.',
+    },
     quirks: [
       { variant: 'note', title: 'Unknown-account deposits go to review', body: <>A transfer into a NUBAN Xental doesn&apos;t recognise is still recorded (with a null account) and marked <C>PendingReview</C> rather than dropped — check the review queue for these.</> },
       { variant: 'note', title: 'High risk routes to review even when the amount matches', body: <>A deposit that reconciles on amount can still be flagged <C>PendingReview</C> if its risk score crosses the threshold (name mismatch, velocity, payer-name reuse).</> },
+      { variant: 'tip', title: 'Overpayments can be refunded', body: <>When a customer overpays (or pays twice), refund the surplus with <C>POST /transactions/{'{'}reference{'}'}/refund</C>. Pair it with an <a href='/documentation/api-reference/money-rules'>Overpaid → Hold</a> rule to park the surplus for review first.</> },
     ],
   },
 
@@ -60,14 +64,6 @@ export const SECTION_CONTENT: Record<string, SectionContent> = {
   'sub-merchants': {
     intro: <>Sub-merchants let you segment your own customers, branches, or tenants inside Xental. They are internal records — not created on any external provider.</>,
     quirks: [{ variant: 'note', title: 'Reference unique per tenant', body: <>Two of <em>your</em> sub-merchants can&apos;t share a <C>reference</C>, but a reference you use is independent of what other Xental accounts use.</> }],
-  },
-
-  webhooks: {
-    intro: <>This is the <strong>inbound</strong> receiver the bank provider posts to — it drives reconciliation. You don&apos;t call it; it&apos;s documented so you understand the flow. To <em>receive</em> events, register a <a href='/documentation/api-reference/webhook-endpoints'>webhook endpoint</a>.</>,
-    quirks: [
-      { variant: 'note', title: 'Always 200 for a valid signature', body: <>The receiver returns <C>200</C> even for duplicate, ignored, or unmatched events (so the provider stops retrying); the body says what happened. A bad/missing signature returns <C>401</C>.</> },
-      { variant: 'note', title: 'HMAC-SHA256 verified', body: <>Requests are verified against your webhook secret over a canonical field string. Duplicates (same reference) are ignored — reconciliation is idempotent.</> },
-    ],
   },
 
   'webhook-endpoints': {
@@ -124,7 +120,7 @@ export const SECTION_CONTENT: Record<string, SectionContent> = {
     quirks: [
       { variant: 'note', title: 'Evaluated after reconciliation commits', body: <>Rules run post-commit and are fully isolated — a rule can&apos;t corrupt or change the reconciliation verdict. Actions reuse existing primitives (Hold → escrow, Notify → webhook event).</> },
       { variant: 'note', title: 'Thresholds are typed', body: <><C>thresholdKobo</C> gates amount triggers (Overpaid/Underpaid); <C>minRiskScore</C> (0–100) gates <C>HighRisk</C>. A rule only fires when its gate is met.</> },
-      { variant: 'warning', title: 'No auto-refund action', body: <>Refunds need the payer&apos;s bank details, which Xental doesn&apos;t hold, so there is no auto-refund action. Use <C>Notify</C>/<C>ReviewFlag</C> and issue a <a href='/documentation/api-reference/transfers'>transfer</a> yourself.</> },
+      { variant: 'note', title: 'Refund an overpayment via Hold → approve', body: <>Rule actions are Hold / Notify / ReviewFlag — there is no auto-refund <em>action</em>. The recommended pattern for duplicate/over payments is <C>Overpaid → Hold</C> (parks the surplus), then approve a refund with <C>POST /transactions/{'{'}reference{'}'}/refund</C> (see <a href='/documentation/api-reference/transactions'>Transactions</a>).</> },
     ],
   },
 
@@ -137,11 +133,16 @@ export const SECTION_CONTENT: Record<string, SectionContent> = {
     ],
   },
 
-  tokens: {
-    intro: <>Exchange the client id + secret of a key you created in your Xental dashboard for a short-lived bearer token, then send it as <C>Authorization: Bearer &lt;token&gt;</C> on every API call.</>,
+  billing: {
+    intro: <>Bill a customer on a recurring cycle from a reusable virtual account. Each cycle Xental opens a <strong>period</strong> for the (variable) expected amount, attributes the customer&apos;s deposits to open periods oldest-first, reminds them when due/overdue, and emits <C>billing.period.due/paid/overdue</C> events. It never pulls funds — the customer pays into their account; Xental attributes and reminds.</>,
+    notes: {
+      'POST /api/v1/billing/schedules': 'Creates a schedule on one of your reusable virtual accounts and opens the first period. Interval is Weekly | Monthly | Quarterly | Yearly.',
+      'PUT /api/v1/billing/schedules/{id}/next-amount': 'Sets the expected amount for the next cycle — billing is variable, so each period can differ.',
+    },
     quirks: [
-      { variant: 'note', title: 'Tokens are short-lived (~1h)', body: <>Re-request a token when it expires. Server integrations typically cache it and refresh on <C>401</C>.</> },
-      { variant: 'note', title: 'Mode is baked into the token', body: <>A key&apos;s <C>test</C>/<C>live</C> mode travels inside its tokens, so calls always run against the matching environment. Create and manage keys in your Xental dashboard.</> },
+      { variant: 'warning', title: 'Amounts are in kobo', body: <><C>amountKobo: 50000</C> is ₦500. The per-period expected amount is set at creation and can be changed per cycle via <C>next-amount</C>.</> },
+      { variant: 'note', title: 'Overpayment carries forward', body: <>Paying more than a period&apos;s amount settles it and carries the surplus to the next period. To return a surplus instead, refund it (see <a href='/documentation/api-reference/transactions'>Transactions</a>).</> },
+      { variant: 'tip', title: 'One active schedule per account', body: <>A reusable account can have a single active schedule. Pause, resume, or cancel it as the subscription changes.</> },
     ],
   },
 
