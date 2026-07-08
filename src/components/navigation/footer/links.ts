@@ -21,7 +21,7 @@ export const FOOTER_LINKS = [
     links: [
       { label: 'Documentation', href: '/documentation' },
       { label: 'API Reference', href: '/documentation/api-reference' },
-      { label: 'Webhook Endpoints', href: '/documentation/api-reference/webhook-endpoints' },
+      { label: 'Webhooks', href: '/documentation/api-reference/webhooks' },
     ],
   },
   {

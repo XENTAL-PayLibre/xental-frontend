@@ -66,6 +66,14 @@ export const SECTION_CONTENT: Record<string, SectionContent> = {
     quirks: [{ variant: 'note', title: 'Reference unique per tenant', body: <>Two of <em>your</em> sub-merchants can&apos;t share a <C>reference</C>, but a reference you use is independent of what other Xental accounts use.</> }],
   },
 
+  webhooks: {
+    intro: <>This is the <strong>inbound</strong> receiver the bank provider posts to — it drives reconciliation. You don&apos;t call it; it&apos;s documented so you understand the flow. To <em>receive</em> events, register a <a href='/documentation/api-reference/webhook-endpoints'>webhook endpoint</a>.</>,
+    quirks: [
+      { variant: 'note', title: 'Always 200 for a valid signature', body: <>The receiver returns <C>200</C> even for duplicate, ignored, or unmatched events (so the provider stops retrying); the body says what happened. A bad/missing signature returns <C>401</C>.</> },
+      { variant: 'note', title: 'HMAC-SHA256 verified', body: <>Requests are verified against your webhook secret over a canonical field string. Duplicates (same reference) are ignored — reconciliation is idempotent.</> },
+    ],
+  },
+
   'webhook-endpoints': {
     intro: <>Register HTTPS endpoints to receive signed, enriched, pre-reconciled events (e.g. <C>deposit.reconciled</C>). Xental signs each delivery and retries with backoff.</>,
     quirks: [
@@ -143,6 +151,14 @@ export const SECTION_CONTENT: Record<string, SectionContent> = {
       { variant: 'warning', title: 'Amounts are in kobo', body: <><C>amountKobo: 50000</C> is ₦500. The per-period expected amount is set at creation and can be changed per cycle via <C>next-amount</C>.</> },
       { variant: 'note', title: 'Overpayment carries forward', body: <>Paying more than a period&apos;s amount settles it and carries the surplus to the next period. To return a surplus instead, refund it (see <a href='/documentation/api-reference/transactions'>Transactions</a>).</> },
       { variant: 'tip', title: 'One active schedule per account', body: <>A reusable account can have a single active schedule. Pause, resume, or cancel it as the subscription changes.</> },
+    ],
+  },
+
+  tokens: {
+    intro: <>Exchange the client id + secret of a key you created in your Xental dashboard for a short-lived bearer token, then send it as <C>Authorization: Bearer &lt;token&gt;</C> on every API call.</>,
+    quirks: [
+      { variant: 'note', title: 'Tokens are short-lived (~1h)', body: <>Re-request a token when it expires. Server integrations typically cache it and refresh on <C>401</C>.</> },
+      { variant: 'note', title: 'Mode is baked into the token', body: <>A key&apos;s <C>test</C>/<C>live</C> mode travels inside its tokens, so calls always run against the matching environment. Create and manage keys in your Xental dashboard.</> },
     ],
   },
 
