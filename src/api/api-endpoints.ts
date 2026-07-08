@@ -30,6 +30,8 @@ export const API_ENDPOINTS = {
   WEBHOOKS: {
     BASE: '/webhook-endpoints',
     ONE: (id: string) => `/webhook-endpoints/${id}`,
+    DELIVERIES: '/webhook-endpoints/deliveries',
+    REPLAY: (id: string) => `/webhook-endpoints/deliveries/${id}/replay`,
   },
   TEAM: {
     BASE: '/team',
@@ -40,6 +42,41 @@ export const API_ENDPOINTS = {
   VIRTUAL_ACCOUNTS: {
     CREATE: '/virtual-accounts',
     LIST: '/virtual-accounts',
+    ONE: (accountRef: string) => `/virtual-accounts/${accountRef}`,
+  },
+  TRANSACTIONS: {
+    BASE: '/transactions',
+    SUMMARY: '/transactions/summary',
+    ONE: (reference: string) => `/transactions/${reference}`,
+    REFUND: (reference: string) => `/transactions/${reference}/refund`,
+  },
+  CHECKOUT: {
+    SESSIONS: '/checkout/sessions',
+  },
+  SETTLEMENT: {
+    CONFIG: '/settings/settlement',
+    SPLITS: '/settings/splits',
+    HOLD: (accountRef: string) => `/settings/splits/${accountRef}/hold`,
+    RELEASE: (accountRef: string) => `/settings/splits/${accountRef}/release`,
+  },
+  BILLING: {
+    SCHEDULES: '/billing/schedules',
+    ONE: (id: string) => `/billing/schedules/${id}`,
+    NEXT_AMOUNT: (id: string) => `/billing/schedules/${id}/next-amount`,
+    PAUSE: (id: string) => `/billing/schedules/${id}/pause`,
+    RESUME: (id: string) => `/billing/schedules/${id}/resume`,
+    CANCEL: (id: string) => `/billing/schedules/${id}/cancel`,
+    PERIODS: (id: string) => `/billing/schedules/${id}/periods`,
+  },
+  TRANSFERS: {
+    BASE: '/transfers',
+    LOOKUP: '/transfers/bank/lookup',
+    SEND: '/transfers/bank',
+    ONE: (merchantTxRef: string) => `/transfers/${merchantTxRef}`,
+  },
+  RULES: {
+    BASE: '/rules',
+    ONE: (id: string) => `/rules/${id}`,
   },
   ACCOUNT_INSIGHTS: {
     BASE: '/insights',

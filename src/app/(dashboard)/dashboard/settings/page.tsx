@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Copy, Eye, EyeOff, MoreVertical, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Copy, Eye, EyeOff, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { cn, koboToNaira } from '@/lib/utils';
+import { CredentialModal, type Credential } from '@/components/dashboard/CredentialModal';
 import type { AxiosError } from 'axios';
 
 function apiError(err: unknown, fallback: string): string {
@@ -20,6 +21,8 @@ import {
   useWebhookEndpoints,
   useCreateWebhook,
   useDeleteWebhook,
+  useWebhookDeliveries,
+  useReplayDelivery,
 } from '@/api/dashboard';
 import {
   useTeam,
@@ -30,9 +33,11 @@ import {
   type TeamMember,
   type TeamRole,
 } from '@/api/team';
+import { useSettlementConfig, useUpdateSettlementConfig } from '@/api/settlement';
+import { useRules, useCreateRule, useDeleteRule } from '@/api/rules';
 
-type Tab = 'Profile' | 'Team' | 'Developers' | 'Security';
-const TABS: Tab[] = ['Profile', 'Team', 'Developers', 'Security'];
+type Tab = 'Profile' | 'Team' | 'Developers' | 'Settlement' | 'Security';
+const TABS: Tab[] = ['Profile', 'Team', 'Developers', 'Settlement', 'Security'];
 
 const ROLES: TeamRole[] = ['Admin', 'Employee', 'Developer'];
 
@@ -157,9 +162,9 @@ function TeamTab() {
     const editId = typeof mode === 'object' ? mode.editId : null;
     return (
       <div>
-        <div className='flex items-center justify-between mb-6'>
+        <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6'>
           <h3 className='text-sm font-semibold text-foreground'>{editId ? 'Edit team member' : 'Add team member'}</h3>
-          <div className='flex items-center gap-2'>
+          <div className='flex flex-wrap items-center gap-2'>
             {editId && (
               <Button size='sm' variant='outline' className='text-destructive border-destructive hover:bg-red-50' disabled={busy} onClick={() => handleDelete(editId)}>
                 <Trash2 className='w-3.5 h-3.5 mr-1.5' /> {remove.isPending ? 'Removing…' : 'Delete'}
@@ -236,8 +241,7 @@ function TeamTab() {
 function DevelopersTab() {
   const [newKeyLabel, setNewKeyLabel] = useState('');
   const [newKeyMode, setNewKeyMode] = useState<'test' | 'live'>('test');
-  const [newWebhookSecret, setNewWebhookSecret] = useState<string | null>(null);
-  const [visibleSecrets, setVisibleSecrets] = useState<Record<string, boolean>>({});
+  const [credential, setCredential] = useState<Credential | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [webhookUrl, setWebhookUrl] = useState('');
 
@@ -260,17 +264,29 @@ function DevelopersTab() {
     if (!newKeyLabel.trim()) { toast.error('Enter a label for the key'); return; }
     try {
       const res = await createKey.mutateAsync({ label: newKeyLabel.trim(), mode: newKeyMode });
-      const secret = (res as { clientSecret?: string })?.clientSecret;
-      if (secret) toast.success(`Key created — secret: ${secret} (shown once, copy now)`, { duration: 10000 });
-      else toast.success('API key created');
       setNewKeyLabel('');
+      setCredential({
+        title: 'API key created',
+        description: 'Copy your Client ID and Secret now — the secret is shown once and cannot be retrieved again.',
+        fields: [
+          { label: 'Client ID', value: res.clientId ?? '' },
+          ...(res.clientSecret ? [{ label: 'Client Secret', value: res.clientSecret, secret: true }] : []),
+        ],
+      });
     } catch (err) { toast.error(apiError(err, 'Failed to create API key')); }
   }
 
   async function handleRotate(id: string) {
     try {
-      await rotateKey.mutateAsync(id);
-      toast.success('API key rotated');
+      const res = await rotateKey.mutateAsync(id);
+      setCredential({
+        title: 'API key rotated',
+        description: 'The old secret is now invalid. Copy the new secret — it is shown once.',
+        fields: [
+          { label: 'Client ID', value: res.clientId ?? '' },
+          ...(res.clientSecret ? [{ label: 'Client Secret', value: res.clientSecret, secret: true }] : []),
+        ],
+      });
     } catch (err) { toast.error(apiError(err, 'Failed to rotate key')); }
   }
 
@@ -285,10 +301,15 @@ function DevelopersTab() {
     if (!webhookUrl.trim()) { toast.error('Enter a webhook URL'); return; }
     try {
       const res = await createWebhook.mutateAsync(webhookUrl.trim());
-      // The signing secret is returned once, at creation — surface it so it can be copied.
-      setNewWebhookSecret(res.signingSecret);
-      toast.success('Webhook added — copy your signing secret now (shown once)');
       setWebhookUrl('');
+      setCredential({
+        title: 'Webhook added',
+        description: 'Copy the signing secret now — use it to verify the HMAC-SHA256 signature on every delivery. It is shown once.',
+        fields: [
+          { label: 'Endpoint URL', value: res.url },
+          { label: 'Signing Secret', value: res.signingSecret, secret: true },
+        ],
+      });
     } catch (err) { toast.error(apiError(err, 'Failed to save webhook')); }
   }
 
@@ -310,23 +331,20 @@ function DevelopersTab() {
           ) : apiKeys.length === 0 ? (
             <div className='px-4 py-4 text-xs text-xental-text-primary-400'>No API keys yet. Create one below.</div>
           ) : apiKeys.map((key) => (
-            <div key={key.id} className='flex items-center justify-between px-4 py-3 bg-white border-b border-stroke-2 last:border-0'>
-              <div>
-                <p className='text-sm text-foreground font-medium'>{key.label ?? 'Unnamed key'}</p>
-                <p className='text-[10px] text-xental-text-primary-400 font-mono mt-0.5'>{key.clientId}</p>
+            <div key={key.id} className='flex items-center justify-between gap-3 px-4 py-3 bg-white border-b border-stroke-2 last:border-0'>
+              <div className='min-w-0'>
+                <p className='text-sm text-foreground font-medium truncate'>{key.label ?? 'Unnamed key'}</p>
+                <p className='text-[10px] text-xental-text-primary-400 font-mono mt-0.5 truncate'>{key.clientId}</p>
               </div>
-              <div className='flex items-center gap-3'>
-                <span className={cn('text-[10px] px-1.5 py-0.5 rounded font-medium', key.status === 'Active' ? 'bg-green-50 text-success' : 'bg-xental-bg text-xental-text-primary-400')}>
+              <div className='flex items-center gap-2.5 sm:gap-3 shrink-0'>
+                <span className={cn('hidden sm:inline text-[10px] px-1.5 py-0.5 rounded font-medium', key.status === 'Active' ? 'bg-green-50 text-success' : 'bg-xental-bg text-xental-text-primary-400')}>
                   {key.status ?? 'Active'}
                 </span>
-                <button onClick={() => setVisibleSecrets((v) => ({ ...v, [key.id]: !v[key.id] }))}>
-                  {visibleSecrets[key.id] ? <EyeOff className='w-3.5 h-3.5 text-xental-text-primary-400' /> : <Eye className='w-3.5 h-3.5 text-xental-text-primary-400' />}
-                </button>
-                <button onClick={() => handleCopy(key.id, key.clientId ?? '')}>
+                <button onClick={() => handleCopy(key.id, key.clientId ?? '')} title='Copy Client ID'>
                   <Copy className={cn('w-3.5 h-3.5', copiedId === key.id ? 'text-success' : 'text-xental-text-primary-400 hover:text-action-blue')} />
                 </button>
-                <button onClick={() => handleRotate(key.id)} title='Rotate key'>
-                  <MoreVertical className='w-3.5 h-3.5 text-xental-text-primary-400 hover:text-foreground' />
+                <button onClick={() => handleRotate(key.id)} title='Rotate key' disabled={rotateKey.isPending}>
+                  <RefreshCw className='w-3.5 h-3.5 text-xental-text-primary-400 hover:text-foreground' />
                 </button>
                 <button onClick={() => handleDeleteKey(key.id)} title='Delete key'>
                   <Trash2 className='w-3.5 h-3.5 text-xental-text-primary-400 hover:text-destructive' />
@@ -335,23 +353,23 @@ function DevelopersTab() {
             </div>
           ))}
         </div>
-        <div className='flex items-center gap-2'>
+        <div className='flex flex-col sm:flex-row sm:items-center gap-2'>
           <input
             value={newKeyLabel}
             onChange={(e) => setNewKeyLabel(e.target.value)}
             placeholder='Key label (e.g. Production)'
-            className='border border-stroke-2 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-action-blue/30 focus:border-action-blue flex-1'
+            className='w-full sm:flex-1 border border-stroke-2 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-action-blue/30 focus:border-action-blue'
           />
           <select
             value={newKeyMode}
             onChange={(e) => setNewKeyMode(e.target.value as 'test' | 'live')}
             title='Live keys require an approved KYC/KYB onboarding'
-            className='border border-stroke-2 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-action-blue/30 focus:border-action-blue'
+            className='w-full sm:w-auto border border-stroke-2 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-action-blue/30 focus:border-action-blue'
           >
             <option value='test'>Test</option>
             <option value='live'>Live</option>
           </select>
-          <Button size='sm' onClick={handleCreateKey} disabled={createKey.isPending}>
+          <Button size='sm' onClick={handleCreateKey} disabled={createKey.isPending} className='w-full sm:w-auto justify-center'>
             <Plus className='w-3.5 h-3.5 mr-1.5' /> {createKey.isPending ? 'Creating...' : 'Create'}
           </Button>
         </div>
@@ -366,46 +384,96 @@ function DevelopersTab() {
           ) : webhooks.length === 0 ? (
             <div className='px-4 py-4 text-xs text-xental-text-primary-400'>No webhook endpoints yet.</div>
           ) : webhooks.map((wh) => (
-            <div key={wh.id} className='flex items-center justify-between px-4 py-3 bg-white border-b border-stroke-2 last:border-0'>
-              <span className='text-sm font-mono text-foreground truncate max-w-xs'>{wh.url}</span>
-              <div className='flex items-center gap-3'>
-                <span className={cn('text-[10px] px-1.5 py-0.5 rounded font-medium', wh.active ? 'bg-green-50 text-success' : 'bg-xental-bg text-xental-text-primary-400')}>
+            <div key={wh.id} className='flex items-center justify-between gap-3 px-4 py-3 bg-white border-b border-stroke-2 last:border-0'>
+              <span className='min-w-0 flex-1 text-sm font-mono text-foreground truncate'>{wh.url}</span>
+              <div className='flex items-center gap-2.5 sm:gap-3 shrink-0'>
+                <span className={cn('hidden sm:inline text-[10px] px-1.5 py-0.5 rounded font-medium', wh.active ? 'bg-green-50 text-success' : 'bg-xental-bg text-xental-text-primary-400')}>
                   {wh.active ? 'Active' : 'Inactive'}
                 </span>
-                <button onClick={() => handleCopy(wh.id, wh.url ?? '')}>
+                <button onClick={() => handleCopy(wh.id, wh.url ?? '')} title='Copy URL'>
                   <Copy className={cn('w-3.5 h-3.5', copiedId === wh.id ? 'text-success' : 'text-xental-text-primary-400 hover:text-action-blue')} />
                 </button>
-                <button onClick={() => handleDeleteWebhook(wh.id)}>
+                <button onClick={() => handleDeleteWebhook(wh.id)} title='Remove'>
                   <Trash2 className='w-3.5 h-3.5 text-xental-text-primary-400 hover:text-destructive' />
                 </button>
               </div>
             </div>
           ))}
         </div>
-        <div className='flex items-center gap-2'>
+        <div className='flex flex-col sm:flex-row sm:items-center gap-2'>
           <input
             value={webhookUrl}
             onChange={(e) => setWebhookUrl(e.target.value)}
             placeholder='https://yourdomain.com/webhook'
-            className='border border-stroke-2 rounded-lg px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-action-blue/30 focus:border-action-blue flex-1'
+            className='w-full sm:flex-1 border border-stroke-2 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-action-blue/30 focus:border-action-blue'
           />
-          <Button size='sm' onClick={handleSaveWebhook} disabled={createWebhook.isPending}>
+          <Button size='sm' onClick={handleSaveWebhook} disabled={createWebhook.isPending} className='w-full sm:w-auto justify-center'>
             <Plus className='w-3.5 h-3.5 mr-1.5' /> {createWebhook.isPending ? 'Saving...' : 'Add'}
           </Button>
         </div>
-        {newWebhookSecret && (
-          <div className='mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3'>
-            <p className='text-xs font-semibold text-amber-800'>Signing secret — copy it now, it won&apos;t be shown again</p>
-            <p className='text-[11px] text-amber-700 mt-0.5'>Use it to verify the HMAC-SHA256 signature on every delivery to this endpoint.</p>
-            <div className='mt-2 flex items-center gap-2'>
-              <code className='flex-1 truncate rounded border border-amber-200 bg-white px-2 py-1 text-[11px] font-mono text-foreground'>{newWebhookSecret}</code>
-              <button onClick={() => handleCopy('new-webhook-secret', newWebhookSecret)} className='inline-flex items-center gap-1 text-xs text-action-blue hover:underline'>
-                <Copy className='w-3.5 h-3.5' /> {copiedId === 'new-webhook-secret' ? 'Copied' : 'Copy'}
-              </button>
-              <button onClick={() => setNewWebhookSecret(null)} className='text-xs text-xental-text-primary-400 hover:text-foreground'>Dismiss</button>
-            </div>
-          </div>
-        )}
+        <WebhookDeliveries />
+      </div>
+
+      <CredentialModal credential={credential} onClose={() => setCredential(null)} />
+    </div>
+  );
+}
+
+const DELIVERY_BADGE: Record<string, string> = {
+  Delivered: 'bg-green-50 text-success',
+  Succeeded: 'bg-green-50 text-success',
+  Failed: 'bg-red-50 text-destructive',
+  Pending: 'bg-orange-50 text-pending',
+  Retrying: 'bg-orange-50 text-pending',
+};
+
+function WebhookDeliveries() {
+  const { data: deliveries = [], isLoading } = useWebhookDeliveries();
+  const replay = useReplayDelivery();
+
+  return (
+    <div className='mt-8 border-t border-stroke-2 pt-6'>
+      <h3 className='text-sm font-semibold text-foreground mb-1'>Recent deliveries</h3>
+      <p className='text-xs text-xental-text-primary-400 mb-4'>Outbound webhook attempts. Replay any delivery that failed.</p>
+      <div className='overflow-x-auto'>
+        <table className='w-full text-xs'>
+          <thead>
+            <tr className='border-b border-stroke-2'>
+              <th className='text-left px-3 py-2 font-semibold text-foreground'>Event</th>
+              <th className='text-left px-3 py-2 font-semibold text-foreground'>Status</th>
+              <th className='text-left px-3 py-2 font-semibold text-foreground'>Attempts</th>
+              <th className='text-left px-3 py-2 font-semibold text-foreground'>Last code</th>
+              <th className='text-left px-3 py-2 font-semibold text-foreground'>Created</th>
+              <th className='px-3 py-2 text-right font-semibold text-foreground'>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {isLoading ? (
+              <tr><td colSpan={6} className='py-6 text-center text-xental-text-primary-400'>Loading deliveries...</td></tr>
+            ) : deliveries.length === 0 ? (
+              <tr><td colSpan={6} className='py-6 text-center text-xental-text-primary-400'>No deliveries yet</td></tr>
+            ) : (
+              deliveries.map((d) => (
+                <tr key={d.id} className='border-b border-stroke-2/50 last:border-0'>
+                  <td className='px-3 py-2.5 text-foreground font-medium'>{d.eventType}</td>
+                  <td className='px-3 py-2.5'>
+                    <span className={cn('px-2 py-0.5 rounded-md text-[11px] font-medium', DELIVERY_BADGE[d.status] ?? 'bg-gray-50 text-gray-500')}>
+                      {d.status}
+                    </span>
+                  </td>
+                  <td className='px-3 py-2.5 text-xental-text-primary-500'>{d.attempts}</td>
+                  <td className='px-3 py-2.5 text-xental-text-primary-500'>{d.lastStatusCode ?? '—'}</td>
+                  <td className='px-3 py-2.5 text-xental-text-primary-500'>{new Date(d.createdAtUtc).toLocaleString()}</td>
+                  <td className='px-3 py-2.5 text-right'>
+                    <button type='button' onClick={() => replay.mutate(d.id)} disabled={replay.isPending} className='text-[11px] font-medium text-action-blue hover:opacity-80'>
+                      Replay
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
@@ -516,6 +584,139 @@ function SecurityTab() {
   );
 }
 
+const RULE_TRIGGERS = ['AnyDeposit', 'Overpaid', 'Underpaid', 'HighRisk', 'FullyPaid'];
+const RULE_ACTIONS = ['Hold', 'Notify', 'ReviewFlag'];
+
+function SettlementTab() {
+  const { data: config, isLoading } = useSettlementConfig();
+  const updateConfig = useUpdateSettlementConfig();
+  const { data: rules = [] } = useRules();
+  const createRule = useCreateRule();
+  const deleteRule = useDeleteRule();
+
+  const [form, setForm] = useState({ accountNumber: '', bankCode: '', accountName: '', autoSettle: 'Off', minPayout: '' });
+  const [rule, setRule] = useState({ trigger: 'Overpaid', action: 'Hold', threshold: '', minRisk: '', priority: '1' });
+
+  useEffect(() => {
+    if (config) {
+      setForm({
+        accountNumber: config.settlementAccountNumber ?? '',
+        bankCode: config.settlementBankCode ?? '',
+        accountName: config.settlementAccountName ?? '',
+        autoSettle: config.autoSettle ? 'On' : 'Off',
+        minPayout: config.minPayoutKobo ? String(config.minPayoutKobo / 100) : '',
+      });
+    }
+  }, [config]);
+
+  const set = (k: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  const handleSaveConfig = () => {
+    updateConfig.mutate({
+      settlementAccountNumber: form.accountNumber || undefined,
+      settlementBankCode: form.bankCode || undefined,
+      settlementAccountName: form.accountName || undefined,
+      autoSettle: form.autoSettle === 'On',
+      minPayoutKobo: Math.round((parseFloat(form.minPayout) || 0) * 100),
+    });
+  };
+
+  const handleAddRule = () => {
+    createRule.mutate(
+      {
+        trigger: rule.trigger,
+        action: rule.action,
+        thresholdKobo: rule.threshold ? Math.round(parseFloat(rule.threshold) * 100) : undefined,
+        minRiskScore: rule.minRisk ? parseInt(rule.minRisk) : undefined,
+        priority: parseInt(rule.priority) || 1,
+      },
+      { onSuccess: () => setRule({ trigger: 'Overpaid', action: 'Hold', threshold: '', minRisk: '', priority: '1' }) }
+    );
+  };
+
+  if (isLoading) return <div className='py-8 text-center text-xental-text-primary-400'>Loading settlement settings...</div>;
+
+  return (
+    <div className='flex flex-col gap-8'>
+      {/* Settlement destination + auto-settle */}
+      <div>
+        <h3 className='text-sm font-semibold text-foreground mb-4'>Settlement account</h3>
+        <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+          <InputField label='Account number' value={form.accountNumber} onChange={set('accountNumber')} placeholder='0123456789' />
+          <InputField label='Bank code' value={form.bankCode} onChange={set('bankCode')} placeholder='000014' />
+          <InputField label='Account name' value={form.accountName} onChange={set('accountName')} placeholder='Business name' />
+          <InputField label='Minimum payout (₦)' value={form.minPayout} onChange={set('minPayout')} placeholder='0' />
+          <SelectField label='Auto-settle' value={form.autoSettle} onChange={set('autoSettle')} options={['Off', 'On']} />
+        </div>
+        {config && !config.canAutoSettle && form.autoSettle === 'On' && (
+          <p className='mt-2 text-xs text-pending'>Auto-settle needs an approved (live) account and a settlement destination.</p>
+        )}
+        <div className='mt-6 flex justify-end'>
+          <Button size='sm' onClick={handleSaveConfig} disabled={updateConfig.isPending}>
+            {updateConfig.isPending ? 'Saving...' : 'Save settings'}
+          </Button>
+        </div>
+      </div>
+
+      {/* Money rules */}
+      <div className='border-t border-stroke-2 pt-6'>
+        <h3 className='text-sm font-semibold text-foreground mb-1'>Reconciliation rules</h3>
+        <p className='text-xs text-xental-text-primary-400 mb-4'>Automatically hold, flag, or notify on deposits that match a trigger.</p>
+
+        <div className='overflow-x-auto mb-4'>
+          <table className='w-full text-xs'>
+            <thead>
+              <tr className='border-b border-stroke-2'>
+                <th className='text-left px-3 py-2 font-semibold text-foreground'>Trigger</th>
+                <th className='text-left px-3 py-2 font-semibold text-foreground'>Action</th>
+                <th className='text-left px-3 py-2 font-semibold text-foreground'>Threshold</th>
+                <th className='text-left px-3 py-2 font-semibold text-foreground'>Min risk</th>
+                <th className='text-left px-3 py-2 font-semibold text-foreground'>Priority</th>
+                <th className='px-3 py-2 w-8' />
+              </tr>
+            </thead>
+            <tbody>
+              {rules.length === 0 ? (
+                <tr><td colSpan={6} className='py-6 text-center text-xental-text-primary-400'>No rules configured</td></tr>
+              ) : (
+                rules.map((r) => (
+                  <tr key={r.id} className='border-b border-stroke-2/50 last:border-0'>
+                    <td className='px-3 py-2.5 text-foreground font-medium'>{r.trigger}</td>
+                    <td className='px-3 py-2.5 text-xental-text-primary-500'>{r.action}</td>
+                    <td className='px-3 py-2.5 text-xental-text-primary-500'>{r.thresholdKobo != null ? koboToNaira(r.thresholdKobo) : '—'}</td>
+                    <td className='px-3 py-2.5 text-xental-text-primary-500'>{r.minRiskScore ?? '—'}</td>
+                    <td className='px-3 py-2.5 text-xental-text-primary-500'>{r.priority}</td>
+                    <td className='px-3 py-2.5 text-right'>
+                      <button type='button' onClick={() => deleteRule.mutate(r.id)} disabled={deleteRule.isPending} className='text-destructive hover:opacity-80'>
+                        <Trash2 className='w-3.5 h-3.5 inline-block' />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className='grid grid-cols-1 sm:grid-cols-5 gap-3 items-end'>
+          <SelectField label='Trigger' value={rule.trigger} onChange={(v) => setRule((s) => ({ ...s, trigger: v }))} options={RULE_TRIGGERS} />
+          <SelectField label='Action' value={rule.action} onChange={(v) => setRule((s) => ({ ...s, action: v }))} options={RULE_ACTIONS} />
+          <InputField label='Threshold (₦)' value={rule.threshold} onChange={(v) => setRule((s) => ({ ...s, threshold: v }))} placeholder='optional' />
+          <InputField label='Min risk' value={rule.minRisk} onChange={(v) => setRule((s) => ({ ...s, minRisk: v }))} placeholder='optional' />
+          <div className='flex items-end gap-2'>
+            <div className='flex-1'>
+              <InputField label='Priority' value={rule.priority} onChange={(v) => setRule((s) => ({ ...s, priority: v }))} />
+            </div>
+            <Button size='sm' onClick={handleAddRule} disabled={createRule.isPending} className='gap-1'>
+              <Plus className='w-3.5 h-3.5' /> Add
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const [tab, setTab] = useState<Tab>('Profile');
 
@@ -531,6 +732,7 @@ export default function SettingsPage() {
         {tab === 'Profile' && <ProfileTab />}
         {tab === 'Team' && <TeamTab />}
         {tab === 'Developers' && <DevelopersTab />}
+        {tab === 'Settlement' && <SettlementTab />}
         {tab === 'Security' && <SecurityTab />}
       </div>
     </div>

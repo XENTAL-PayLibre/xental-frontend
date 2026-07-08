@@ -73,6 +73,9 @@ export type VirtualAccountResponse = {
 export type ApiKeyResponse = {
   id: string;
   clientId: string | null;
+  /** Present only in the create/rotate response — shown once. */
+  clientSecret?: string | null;
+  mode?: string | null;
   name: string | null;
   label: string | null;
   status: string | null;
@@ -109,4 +112,127 @@ export type DeveloperProfileResponse = {
   emailVerified: boolean;
   status: string | null;
   createdAtUtc: string;
+};
+
+// ---- Refunds ----
+export type RefundResponse = {
+  status: string;
+  transferRef: string;
+  amountKobo: number;
+  destinationAccountNumber: string;
+  destinationBankCode: string;
+  providerReference: string | null;
+};
+
+// ---- Live Checkout / payment links ----
+export type CheckoutSnapshotResponse = {
+  accountRef: string;
+  accountNumber: string;
+  bankName: string;
+  accountName: string;
+  brand: string;
+  paymentState: string;
+  amountPaidKobo: number;
+  expectedAmountKobo: number | null;
+};
+
+export type CheckoutSessionResponse = {
+  token: string;
+  snapshotUrl: string;
+  streamUrl: string;
+  expiresAtUtc: string;
+  snapshot: CheckoutSnapshotResponse;
+};
+
+// ---- Escrow / settlement hold ----
+export type EscrowHoldResponse = {
+  id: string;
+  accountRef: string;
+  amountKobo: number;
+  state: string;
+  releaseCondition: string | null;
+  createdAtUtc: string;
+};
+
+export type SettlementConfigResponse = {
+  settlementAccountNumber: string | null;
+  settlementBankCode: string | null;
+  settlementAccountName: string | null;
+  autoSettle: boolean;
+  minPayoutKobo: number;
+  canAutoSettle: boolean;
+};
+
+// ---- Transfers / payouts ----
+export type BankLookupResponse = {
+  accountName: string;
+  accountNumber: string;
+  bankCode: string;
+};
+
+export type TransferResponse = {
+  id: string;
+  merchantTxRef: string;
+  amountKobo: number;
+  recipientAccountNumber: string;
+  recipientBankCode: string;
+  status: string;
+  providerReference: string | null;
+  failureReason: string | null;
+  createdAtUtc: string;
+  completedAtUtc: string | null;
+};
+
+// ---- Recurring billing ----
+export type BillingScheduleResponse = {
+  id: string;
+  reference: string;
+  accountRef: string;
+  interval: string;
+  status: string;
+  nextAmountKobo: number;
+  dueOffsetDays: number;
+  periodsGenerated: number;
+  carryCreditKobo: number;
+  currentPeriodEndUtc: string | null;
+  description: string | null;
+  createdAtUtc: string;
+};
+
+export type BillingPeriodResponse = {
+  id: string;
+  sequence: number;
+  status: string;
+  expectedAmountKobo: number;
+  amountAttributedKobo: number;
+  outstandingKobo: number;
+  periodStartUtc: string;
+  periodEndUtc: string;
+  dueDateUtc: string;
+  paidAtUtc: string | null;
+};
+
+// ---- Webhook deliveries ----
+export type WebhookDeliveryResponse = {
+  id: string;
+  endpointId: string;
+  eventType: string;
+  status: string;
+  attempts: number;
+  nextAttemptAtUtc: string | null;
+  deliveredAtUtc: string | null;
+  lastStatusCode: number | null;
+  lastError: string | null;
+  createdAtUtc: string;
+};
+
+// ---- Money rules ----
+export type RuleResponse = {
+  id: string;
+  trigger: string;
+  action: string;
+  thresholdKobo: number | null;
+  minRiskScore: number | null;
+  enabled: boolean;
+  priority: number;
 };

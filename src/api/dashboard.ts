@@ -1,7 +1,9 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { getRequest, postRequest, deleteRequest } from '@/lib/http';
+import { displayError } from './auth';
 import type {
   InsightsResponse,
   SubMerchantResponse,
@@ -13,6 +15,8 @@ import type {
   WebhookEndpointCreatedResponse,
   SimulatedDepositResponse,
   TransactionSummaryResponse,
+  RefundResponse,
+  WebhookDeliveryResponse,
 } from './types/dashboard';
 import { API_ENDPOINTS } from './api-endpoints';
 
@@ -44,18 +48,28 @@ export function useSubMerchants() {
   });
 }
 
-export function useTransactions(params?: { status?: string; limit?: number; virtualAccountId?: string }) {
+export function useTransactions(params?: {
+  status?: string;
+  reconciliation?: string;
+  accountRef?: string;
+  take?: number;
+  from?: string;
+  to?: string;
+}) {
   const searchParams = new URLSearchParams();
   if (params?.status) searchParams.set('status', params.status);
-  if (params?.limit) searchParams.set('limit', String(params.limit));
-  if (params?.virtualAccountId) searchParams.set('virtualAccountId', params.virtualAccountId);
+  if (params?.reconciliation) searchParams.set('reconciliation', params.reconciliation);
+  if (params?.accountRef) searchParams.set('accountRef', params.accountRef);
+  if (params?.take) searchParams.set('take', String(params.take));
+  if (params?.from) searchParams.set('from', params.from);
+  if (params?.to) searchParams.set('to', params.to);
   const qs = searchParams.toString();
 
   return useQuery({
     queryKey: ['transactions', params],
     queryFn: () =>
       getRequest<TransactionResponse[]>({
-        url: `/transactions${qs ? `?${qs}` : ''}`,
+        url: `${API_ENDPOINTS.TRANSACTIONS.BASE}${qs ? `?${qs}` : ''}`,
       }),
     staleTime: 30 * 1000,
   });
@@ -65,8 +79,37 @@ export function useTransaction(reference: string) {
   return useQuery({
     queryKey: ['transactions', reference],
     queryFn: () =>
-      getRequest<TransactionResponse>({ url: `/transactions/${reference}` }),
+      getRequest<TransactionResponse>({ url: API_ENDPOINTS.TRANSACTIONS.ONE(reference) }),
     enabled: !!reference,
+  });
+}
+
+export function useRefundTransaction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      reference,
+      destination,
+    }: {
+      reference: string;
+      destination?: { accountNumber?: string; bankCode?: string; accountName?: string };
+    }) =>
+      postRequest<RefundResponse, typeof destination>({
+        url: API_ENDPOINTS.TRANSACTIONS.REFUND(reference),
+        payload: destination ?? {},
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['transactions'] });
+      qc.invalidateQueries({ queryKey: ['virtual-accounts'] });
+      qc.invalidateQueries({ queryKey: ['insights'] });
+      toast.success('Refund sent to the payer.');
+    },
+    onError: (error) => {
+      displayError(error, 'Unable to process the refund. Please try again.', {
+        400: 'No refundable surplus for this transaction.',
+        409: 'A refund for this deposit is already in progress.',
+      });
+    },
   });
 }
 
@@ -139,6 +182,36 @@ export function useDeleteWebhook() {
     mutationFn: (id: string) =>
       deleteRequest<void>({ url: `/webhook-endpoints/${id}` }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['webhook-endpoints'] }),
+  });
+}
+
+export function useWebhookDeliveries(status?: string) {
+  const qs = status ? `?status=${status}` : '';
+  return useQuery({
+    queryKey: ['webhook-deliveries', status],
+    queryFn: () =>
+      getRequest<WebhookDeliveryResponse[]>({
+        url: `${API_ENDPOINTS.WEBHOOKS.DELIVERIES}${qs}`,
+      }),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useReplayDelivery() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      postRequest<void, Record<string, never>>({
+        url: API_ENDPOINTS.WEBHOOKS.REPLAY(id),
+        payload: {},
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['webhook-deliveries'] });
+      toast.success('Delivery queued for replay.');
+    },
+    onError: (error) => {
+      displayError(error, 'Unable to replay this delivery. Please try again.');
+    },
   });
 }
 
