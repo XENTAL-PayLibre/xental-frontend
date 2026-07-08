@@ -74,6 +74,13 @@ export type WebhookEndpointResponse = {
   createdAtUtc: string;
 };
 
+/** Returned only from POST /webhook-endpoints — the signing secret is shown once. */
+export type WebhookEndpointCreatedResponse = {
+  id: string;
+  url: string;
+  signingSecret: string;
+};
+
 export type SimulatedDepositResponse = {
   status: string | null;
   reference: string | null;

@@ -236,6 +236,7 @@ function TeamTab() {
 function DevelopersTab() {
   const [newKeyLabel, setNewKeyLabel] = useState('');
   const [newKeyMode, setNewKeyMode] = useState<'test' | 'live'>('test');
+  const [newWebhookSecret, setNewWebhookSecret] = useState<string | null>(null);
   const [visibleSecrets, setVisibleSecrets] = useState<Record<string, boolean>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [webhookUrl, setWebhookUrl] = useState('');
@@ -283,8 +284,10 @@ function DevelopersTab() {
   async function handleSaveWebhook() {
     if (!webhookUrl.trim()) { toast.error('Enter a webhook URL'); return; }
     try {
-      await createWebhook.mutateAsync(webhookUrl.trim());
-      toast.success('Webhook endpoint added');
+      const res = await createWebhook.mutateAsync(webhookUrl.trim());
+      // The signing secret is returned once, at creation — surface it so it can be copied.
+      setNewWebhookSecret(res.signingSecret);
+      toast.success('Webhook added — copy your signing secret now (shown once)');
       setWebhookUrl('');
     } catch (err) { toast.error(apiError(err, 'Failed to save webhook')); }
   }
@@ -390,6 +393,19 @@ function DevelopersTab() {
             <Plus className='w-3.5 h-3.5 mr-1.5' /> {createWebhook.isPending ? 'Saving...' : 'Add'}
           </Button>
         </div>
+        {newWebhookSecret && (
+          <div className='mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3'>
+            <p className='text-xs font-semibold text-amber-800'>Signing secret — copy it now, it won&apos;t be shown again</p>
+            <p className='text-[11px] text-amber-700 mt-0.5'>Use it to verify the HMAC-SHA256 signature on every delivery to this endpoint.</p>
+            <div className='mt-2 flex items-center gap-2'>
+              <code className='flex-1 truncate rounded border border-amber-200 bg-white px-2 py-1 text-[11px] font-mono text-foreground'>{newWebhookSecret}</code>
+              <button onClick={() => handleCopy('new-webhook-secret', newWebhookSecret)} className='inline-flex items-center gap-1 text-xs text-action-blue hover:underline'>
+                <Copy className='w-3.5 h-3.5' /> {copiedId === 'new-webhook-secret' ? 'Copied' : 'Copy'}
+              </button>
+              <button onClick={() => setNewWebhookSecret(null)} className='text-xs text-xental-text-primary-400 hover:text-foreground'>Dismiss</button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
