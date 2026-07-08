@@ -43,7 +43,7 @@ export interface AdminOnboardingApplication {
   tier: string;
   developerKycStatus: string;
   businessKybStatus: string;
-  submittedAtUtc: string;
+  submittedAtUtc: string | null;
 }
 
 export interface AdminTenantDetailsResponse {

@@ -94,7 +94,9 @@ export default function OnboardingView() {
                       </div>
                     </td>
                     <td className='px-4 py-3 text-xental-text-primary-400 w-[25%]'>
-                      {new Date(item.submittedAtUtc).toLocaleDateString()}
+                      {item.submittedAtUtc && new Date(item.submittedAtUtc).getFullYear() > 1970
+                        ? new Date(item.submittedAtUtc).toLocaleDateString()
+                        : '—'}
                     </td>
                     <td className='px-4 py-3 w-[25%]'>
                       <span className='capitalize'>{item.tier}</span>
