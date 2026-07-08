@@ -73,6 +73,9 @@ export type VirtualAccountResponse = {
 export type ApiKeyResponse = {
   id: string;
   clientId: string | null;
+  /** Present only in the create/rotate response — shown once. */
+  clientSecret?: string | null;
+  mode?: string | null;
   name: string | null;
   label: string | null;
   status: string | null;

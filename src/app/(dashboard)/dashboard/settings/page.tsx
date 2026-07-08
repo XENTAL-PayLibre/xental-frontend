@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Copy, Eye, EyeOff, MoreVertical, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Copy, Eye, EyeOff, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { cn, koboToNaira } from '@/lib/utils';
+import { CredentialModal, type Credential } from '@/components/dashboard/CredentialModal';
 import type { AxiosError } from 'axios';
 
 function apiError(err: unknown, fallback: string): string {
@@ -161,9 +162,9 @@ function TeamTab() {
     const editId = typeof mode === 'object' ? mode.editId : null;
     return (
       <div>
-        <div className='flex items-center justify-between mb-6'>
+        <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6'>
           <h3 className='text-sm font-semibold text-foreground'>{editId ? 'Edit team member' : 'Add team member'}</h3>
-          <div className='flex items-center gap-2'>
+          <div className='flex flex-wrap items-center gap-2'>
             {editId && (
               <Button size='sm' variant='outline' className='text-destructive border-destructive hover:bg-red-50' disabled={busy} onClick={() => handleDelete(editId)}>
                 <Trash2 className='w-3.5 h-3.5 mr-1.5' /> {remove.isPending ? 'Removing…' : 'Delete'}
@@ -240,8 +241,7 @@ function TeamTab() {
 function DevelopersTab() {
   const [newKeyLabel, setNewKeyLabel] = useState('');
   const [newKeyMode, setNewKeyMode] = useState<'test' | 'live'>('test');
-  const [newWebhookSecret, setNewWebhookSecret] = useState<string | null>(null);
-  const [visibleSecrets, setVisibleSecrets] = useState<Record<string, boolean>>({});
+  const [credential, setCredential] = useState<Credential | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [webhookUrl, setWebhookUrl] = useState('');
 
@@ -264,17 +264,29 @@ function DevelopersTab() {
     if (!newKeyLabel.trim()) { toast.error('Enter a label for the key'); return; }
     try {
       const res = await createKey.mutateAsync({ label: newKeyLabel.trim(), mode: newKeyMode });
-      const secret = (res as { clientSecret?: string })?.clientSecret;
-      if (secret) toast.success(`Key created — secret: ${secret} (shown once, copy now)`, { duration: 10000 });
-      else toast.success('API key created');
       setNewKeyLabel('');
+      setCredential({
+        title: 'API key created',
+        description: 'Copy your Client ID and Secret now — the secret is shown once and cannot be retrieved again.',
+        fields: [
+          { label: 'Client ID', value: res.clientId ?? '' },
+          ...(res.clientSecret ? [{ label: 'Client Secret', value: res.clientSecret, secret: true }] : []),
+        ],
+      });
     } catch (err) { toast.error(apiError(err, 'Failed to create API key')); }
   }
 
   async function handleRotate(id: string) {
     try {
-      await rotateKey.mutateAsync(id);
-      toast.success('API key rotated');
+      const res = await rotateKey.mutateAsync(id);
+      setCredential({
+        title: 'API key rotated',
+        description: 'The old secret is now invalid. Copy the new secret — it is shown once.',
+        fields: [
+          { label: 'Client ID', value: res.clientId ?? '' },
+          ...(res.clientSecret ? [{ label: 'Client Secret', value: res.clientSecret, secret: true }] : []),
+        ],
+      });
     } catch (err) { toast.error(apiError(err, 'Failed to rotate key')); }
   }
 
@@ -289,10 +301,15 @@ function DevelopersTab() {
     if (!webhookUrl.trim()) { toast.error('Enter a webhook URL'); return; }
     try {
       const res = await createWebhook.mutateAsync(webhookUrl.trim());
-      // The signing secret is returned once, at creation — surface it so it can be copied.
-      setNewWebhookSecret(res.signingSecret);
-      toast.success('Webhook added — copy your signing secret now (shown once)');
       setWebhookUrl('');
+      setCredential({
+        title: 'Webhook added',
+        description: 'Copy the signing secret now — use it to verify the HMAC-SHA256 signature on every delivery. It is shown once.',
+        fields: [
+          { label: 'Endpoint URL', value: res.url },
+          { label: 'Signing Secret', value: res.signingSecret, secret: true },
+        ],
+      });
     } catch (err) { toast.error(apiError(err, 'Failed to save webhook')); }
   }
 
@@ -314,23 +331,20 @@ function DevelopersTab() {
           ) : apiKeys.length === 0 ? (
             <div className='px-4 py-4 text-xs text-xental-text-primary-400'>No API keys yet. Create one below.</div>
           ) : apiKeys.map((key) => (
-            <div key={key.id} className='flex items-center justify-between px-4 py-3 bg-white border-b border-stroke-2 last:border-0'>
-              <div>
-                <p className='text-sm text-foreground font-medium'>{key.label ?? 'Unnamed key'}</p>
-                <p className='text-[10px] text-xental-text-primary-400 font-mono mt-0.5'>{key.clientId}</p>
+            <div key={key.id} className='flex items-center justify-between gap-3 px-4 py-3 bg-white border-b border-stroke-2 last:border-0'>
+              <div className='min-w-0'>
+                <p className='text-sm text-foreground font-medium truncate'>{key.label ?? 'Unnamed key'}</p>
+                <p className='text-[10px] text-xental-text-primary-400 font-mono mt-0.5 truncate'>{key.clientId}</p>
               </div>
-              <div className='flex items-center gap-3'>
-                <span className={cn('text-[10px] px-1.5 py-0.5 rounded font-medium', key.status === 'Active' ? 'bg-green-50 text-success' : 'bg-xental-bg text-xental-text-primary-400')}>
+              <div className='flex items-center gap-2.5 sm:gap-3 shrink-0'>
+                <span className={cn('hidden sm:inline text-[10px] px-1.5 py-0.5 rounded font-medium', key.status === 'Active' ? 'bg-green-50 text-success' : 'bg-xental-bg text-xental-text-primary-400')}>
                   {key.status ?? 'Active'}
                 </span>
-                <button onClick={() => setVisibleSecrets((v) => ({ ...v, [key.id]: !v[key.id] }))}>
-                  {visibleSecrets[key.id] ? <EyeOff className='w-3.5 h-3.5 text-xental-text-primary-400' /> : <Eye className='w-3.5 h-3.5 text-xental-text-primary-400' />}
-                </button>
-                <button onClick={() => handleCopy(key.id, key.clientId ?? '')}>
+                <button onClick={() => handleCopy(key.id, key.clientId ?? '')} title='Copy Client ID'>
                   <Copy className={cn('w-3.5 h-3.5', copiedId === key.id ? 'text-success' : 'text-xental-text-primary-400 hover:text-action-blue')} />
                 </button>
-                <button onClick={() => handleRotate(key.id)} title='Rotate key'>
-                  <MoreVertical className='w-3.5 h-3.5 text-xental-text-primary-400 hover:text-foreground' />
+                <button onClick={() => handleRotate(key.id)} title='Rotate key' disabled={rotateKey.isPending}>
+                  <RefreshCw className='w-3.5 h-3.5 text-xental-text-primary-400 hover:text-foreground' />
                 </button>
                 <button onClick={() => handleDeleteKey(key.id)} title='Delete key'>
                   <Trash2 className='w-3.5 h-3.5 text-xental-text-primary-400 hover:text-destructive' />
@@ -339,23 +353,23 @@ function DevelopersTab() {
             </div>
           ))}
         </div>
-        <div className='flex items-center gap-2'>
+        <div className='flex flex-col sm:flex-row sm:items-center gap-2'>
           <input
             value={newKeyLabel}
             onChange={(e) => setNewKeyLabel(e.target.value)}
             placeholder='Key label (e.g. Production)'
-            className='border border-stroke-2 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-action-blue/30 focus:border-action-blue flex-1'
+            className='w-full sm:flex-1 border border-stroke-2 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-action-blue/30 focus:border-action-blue'
           />
           <select
             value={newKeyMode}
             onChange={(e) => setNewKeyMode(e.target.value as 'test' | 'live')}
             title='Live keys require an approved KYC/KYB onboarding'
-            className='border border-stroke-2 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-action-blue/30 focus:border-action-blue'
+            className='w-full sm:w-auto border border-stroke-2 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-action-blue/30 focus:border-action-blue'
           >
             <option value='test'>Test</option>
             <option value='live'>Live</option>
           </select>
-          <Button size='sm' onClick={handleCreateKey} disabled={createKey.isPending}>
+          <Button size='sm' onClick={handleCreateKey} disabled={createKey.isPending} className='w-full sm:w-auto justify-center'>
             <Plus className='w-3.5 h-3.5 mr-1.5' /> {createKey.isPending ? 'Creating...' : 'Create'}
           </Button>
         </div>
@@ -370,48 +384,37 @@ function DevelopersTab() {
           ) : webhooks.length === 0 ? (
             <div className='px-4 py-4 text-xs text-xental-text-primary-400'>No webhook endpoints yet.</div>
           ) : webhooks.map((wh) => (
-            <div key={wh.id} className='flex items-center justify-between px-4 py-3 bg-white border-b border-stroke-2 last:border-0'>
-              <span className='text-sm font-mono text-foreground truncate max-w-xs'>{wh.url}</span>
-              <div className='flex items-center gap-3'>
-                <span className={cn('text-[10px] px-1.5 py-0.5 rounded font-medium', wh.active ? 'bg-green-50 text-success' : 'bg-xental-bg text-xental-text-primary-400')}>
+            <div key={wh.id} className='flex items-center justify-between gap-3 px-4 py-3 bg-white border-b border-stroke-2 last:border-0'>
+              <span className='min-w-0 flex-1 text-sm font-mono text-foreground truncate'>{wh.url}</span>
+              <div className='flex items-center gap-2.5 sm:gap-3 shrink-0'>
+                <span className={cn('hidden sm:inline text-[10px] px-1.5 py-0.5 rounded font-medium', wh.active ? 'bg-green-50 text-success' : 'bg-xental-bg text-xental-text-primary-400')}>
                   {wh.active ? 'Active' : 'Inactive'}
                 </span>
-                <button onClick={() => handleCopy(wh.id, wh.url ?? '')}>
+                <button onClick={() => handleCopy(wh.id, wh.url ?? '')} title='Copy URL'>
                   <Copy className={cn('w-3.5 h-3.5', copiedId === wh.id ? 'text-success' : 'text-xental-text-primary-400 hover:text-action-blue')} />
                 </button>
-                <button onClick={() => handleDeleteWebhook(wh.id)}>
+                <button onClick={() => handleDeleteWebhook(wh.id)} title='Remove'>
                   <Trash2 className='w-3.5 h-3.5 text-xental-text-primary-400 hover:text-destructive' />
                 </button>
               </div>
             </div>
           ))}
         </div>
-        <div className='flex items-center gap-2'>
+        <div className='flex flex-col sm:flex-row sm:items-center gap-2'>
           <input
             value={webhookUrl}
             onChange={(e) => setWebhookUrl(e.target.value)}
             placeholder='https://yourdomain.com/webhook'
-            className='border border-stroke-2 rounded-lg px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-action-blue/30 focus:border-action-blue flex-1'
+            className='w-full sm:flex-1 border border-stroke-2 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-action-blue/30 focus:border-action-blue'
           />
-          <Button size='sm' onClick={handleSaveWebhook} disabled={createWebhook.isPending}>
+          <Button size='sm' onClick={handleSaveWebhook} disabled={createWebhook.isPending} className='w-full sm:w-auto justify-center'>
             <Plus className='w-3.5 h-3.5 mr-1.5' /> {createWebhook.isPending ? 'Saving...' : 'Add'}
           </Button>
         </div>
-        {newWebhookSecret && (
-          <div className='mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3'>
-            <p className='text-xs font-semibold text-amber-800'>Signing secret — copy it now, it won&apos;t be shown again</p>
-            <p className='text-[11px] text-amber-700 mt-0.5'>Use it to verify the HMAC-SHA256 signature on every delivery to this endpoint.</p>
-            <div className='mt-2 flex items-center gap-2'>
-              <code className='flex-1 truncate rounded border border-amber-200 bg-white px-2 py-1 text-[11px] font-mono text-foreground'>{newWebhookSecret}</code>
-              <button onClick={() => handleCopy('new-webhook-secret', newWebhookSecret)} className='inline-flex items-center gap-1 text-xs text-action-blue hover:underline'>
-                <Copy className='w-3.5 h-3.5' /> {copiedId === 'new-webhook-secret' ? 'Copied' : 'Copy'}
-              </button>
-              <button onClick={() => setNewWebhookSecret(null)} className='text-xs text-xental-text-primary-400 hover:text-foreground'>Dismiss</button>
-            </div>
-          </div>
-        )}
         <WebhookDeliveries />
       </div>
+
+      <CredentialModal credential={credential} onClose={() => setCredential(null)} />
     </div>
   );
 }
