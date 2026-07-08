@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Copy, Eye, EyeOff, MoreVertical, Pencil, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { cn, koboToNaira } from '@/lib/utils';
 import type { AxiosError } from 'axios';
 
 function apiError(err: unknown, fallback: string): string {
@@ -20,6 +20,8 @@ import {
   useWebhookEndpoints,
   useCreateWebhook,
   useDeleteWebhook,
+  useWebhookDeliveries,
+  useReplayDelivery,
 } from '@/api/dashboard';
 import {
   useTeam,
@@ -30,9 +32,11 @@ import {
   type TeamMember,
   type TeamRole,
 } from '@/api/team';
+import { useSettlementConfig, useUpdateSettlementConfig } from '@/api/settlement';
+import { useRules, useCreateRule, useDeleteRule } from '@/api/rules';
 
-type Tab = 'Profile' | 'Team' | 'Developers' | 'Security';
-const TABS: Tab[] = ['Profile', 'Team', 'Developers', 'Security'];
+type Tab = 'Profile' | 'Team' | 'Developers' | 'Settlement' | 'Security';
+const TABS: Tab[] = ['Profile', 'Team', 'Developers', 'Settlement', 'Security'];
 
 const ROLES: TeamRole[] = ['Admin', 'Employee', 'Developer'];
 
@@ -406,6 +410,67 @@ function DevelopersTab() {
             </div>
           </div>
         )}
+        <WebhookDeliveries />
+      </div>
+    </div>
+  );
+}
+
+const DELIVERY_BADGE: Record<string, string> = {
+  Delivered: 'bg-green-50 text-success',
+  Succeeded: 'bg-green-50 text-success',
+  Failed: 'bg-red-50 text-destructive',
+  Pending: 'bg-orange-50 text-pending',
+  Retrying: 'bg-orange-50 text-pending',
+};
+
+function WebhookDeliveries() {
+  const { data: deliveries = [], isLoading } = useWebhookDeliveries();
+  const replay = useReplayDelivery();
+
+  return (
+    <div className='mt-8 border-t border-stroke-2 pt-6'>
+      <h3 className='text-sm font-semibold text-foreground mb-1'>Recent deliveries</h3>
+      <p className='text-xs text-xental-text-primary-400 mb-4'>Outbound webhook attempts. Replay any delivery that failed.</p>
+      <div className='overflow-x-auto'>
+        <table className='w-full text-xs'>
+          <thead>
+            <tr className='border-b border-stroke-2'>
+              <th className='text-left px-3 py-2 font-semibold text-foreground'>Event</th>
+              <th className='text-left px-3 py-2 font-semibold text-foreground'>Status</th>
+              <th className='text-left px-3 py-2 font-semibold text-foreground'>Attempts</th>
+              <th className='text-left px-3 py-2 font-semibold text-foreground'>Last code</th>
+              <th className='text-left px-3 py-2 font-semibold text-foreground'>Created</th>
+              <th className='px-3 py-2 text-right font-semibold text-foreground'>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {isLoading ? (
+              <tr><td colSpan={6} className='py-6 text-center text-xental-text-primary-400'>Loading deliveries...</td></tr>
+            ) : deliveries.length === 0 ? (
+              <tr><td colSpan={6} className='py-6 text-center text-xental-text-primary-400'>No deliveries yet</td></tr>
+            ) : (
+              deliveries.map((d) => (
+                <tr key={d.id} className='border-b border-stroke-2/50 last:border-0'>
+                  <td className='px-3 py-2.5 text-foreground font-medium'>{d.eventType}</td>
+                  <td className='px-3 py-2.5'>
+                    <span className={cn('px-2 py-0.5 rounded-md text-[11px] font-medium', DELIVERY_BADGE[d.status] ?? 'bg-gray-50 text-gray-500')}>
+                      {d.status}
+                    </span>
+                  </td>
+                  <td className='px-3 py-2.5 text-xental-text-primary-500'>{d.attempts}</td>
+                  <td className='px-3 py-2.5 text-xental-text-primary-500'>{d.lastStatusCode ?? '—'}</td>
+                  <td className='px-3 py-2.5 text-xental-text-primary-500'>{new Date(d.createdAtUtc).toLocaleString()}</td>
+                  <td className='px-3 py-2.5 text-right'>
+                    <button type='button' onClick={() => replay.mutate(d.id)} disabled={replay.isPending} className='text-[11px] font-medium text-action-blue hover:opacity-80'>
+                      Replay
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
@@ -516,6 +581,139 @@ function SecurityTab() {
   );
 }
 
+const RULE_TRIGGERS = ['AnyDeposit', 'Overpaid', 'Underpaid', 'HighRisk', 'FullyPaid'];
+const RULE_ACTIONS = ['Hold', 'Notify', 'ReviewFlag'];
+
+function SettlementTab() {
+  const { data: config, isLoading } = useSettlementConfig();
+  const updateConfig = useUpdateSettlementConfig();
+  const { data: rules = [] } = useRules();
+  const createRule = useCreateRule();
+  const deleteRule = useDeleteRule();
+
+  const [form, setForm] = useState({ accountNumber: '', bankCode: '', accountName: '', autoSettle: 'Off', minPayout: '' });
+  const [rule, setRule] = useState({ trigger: 'Overpaid', action: 'Hold', threshold: '', minRisk: '', priority: '1' });
+
+  useEffect(() => {
+    if (config) {
+      setForm({
+        accountNumber: config.settlementAccountNumber ?? '',
+        bankCode: config.settlementBankCode ?? '',
+        accountName: config.settlementAccountName ?? '',
+        autoSettle: config.autoSettle ? 'On' : 'Off',
+        minPayout: config.minPayoutKobo ? String(config.minPayoutKobo / 100) : '',
+      });
+    }
+  }, [config]);
+
+  const set = (k: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  const handleSaveConfig = () => {
+    updateConfig.mutate({
+      settlementAccountNumber: form.accountNumber || undefined,
+      settlementBankCode: form.bankCode || undefined,
+      settlementAccountName: form.accountName || undefined,
+      autoSettle: form.autoSettle === 'On',
+      minPayoutKobo: Math.round((parseFloat(form.minPayout) || 0) * 100),
+    });
+  };
+
+  const handleAddRule = () => {
+    createRule.mutate(
+      {
+        trigger: rule.trigger,
+        action: rule.action,
+        thresholdKobo: rule.threshold ? Math.round(parseFloat(rule.threshold) * 100) : undefined,
+        minRiskScore: rule.minRisk ? parseInt(rule.minRisk) : undefined,
+        priority: parseInt(rule.priority) || 1,
+      },
+      { onSuccess: () => setRule({ trigger: 'Overpaid', action: 'Hold', threshold: '', minRisk: '', priority: '1' }) }
+    );
+  };
+
+  if (isLoading) return <div className='py-8 text-center text-xental-text-primary-400'>Loading settlement settings...</div>;
+
+  return (
+    <div className='flex flex-col gap-8'>
+      {/* Settlement destination + auto-settle */}
+      <div>
+        <h3 className='text-sm font-semibold text-foreground mb-4'>Settlement account</h3>
+        <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+          <InputField label='Account number' value={form.accountNumber} onChange={set('accountNumber')} placeholder='0123456789' />
+          <InputField label='Bank code' value={form.bankCode} onChange={set('bankCode')} placeholder='000014' />
+          <InputField label='Account name' value={form.accountName} onChange={set('accountName')} placeholder='Business name' />
+          <InputField label='Minimum payout (₦)' value={form.minPayout} onChange={set('minPayout')} placeholder='0' />
+          <SelectField label='Auto-settle' value={form.autoSettle} onChange={set('autoSettle')} options={['Off', 'On']} />
+        </div>
+        {config && !config.canAutoSettle && form.autoSettle === 'On' && (
+          <p className='mt-2 text-xs text-pending'>Auto-settle needs an approved (live) account and a settlement destination.</p>
+        )}
+        <div className='mt-6 flex justify-end'>
+          <Button size='sm' onClick={handleSaveConfig} disabled={updateConfig.isPending}>
+            {updateConfig.isPending ? 'Saving...' : 'Save settings'}
+          </Button>
+        </div>
+      </div>
+
+      {/* Money rules */}
+      <div className='border-t border-stroke-2 pt-6'>
+        <h3 className='text-sm font-semibold text-foreground mb-1'>Reconciliation rules</h3>
+        <p className='text-xs text-xental-text-primary-400 mb-4'>Automatically hold, flag, or notify on deposits that match a trigger.</p>
+
+        <div className='overflow-x-auto mb-4'>
+          <table className='w-full text-xs'>
+            <thead>
+              <tr className='border-b border-stroke-2'>
+                <th className='text-left px-3 py-2 font-semibold text-foreground'>Trigger</th>
+                <th className='text-left px-3 py-2 font-semibold text-foreground'>Action</th>
+                <th className='text-left px-3 py-2 font-semibold text-foreground'>Threshold</th>
+                <th className='text-left px-3 py-2 font-semibold text-foreground'>Min risk</th>
+                <th className='text-left px-3 py-2 font-semibold text-foreground'>Priority</th>
+                <th className='px-3 py-2 w-8' />
+              </tr>
+            </thead>
+            <tbody>
+              {rules.length === 0 ? (
+                <tr><td colSpan={6} className='py-6 text-center text-xental-text-primary-400'>No rules configured</td></tr>
+              ) : (
+                rules.map((r) => (
+                  <tr key={r.id} className='border-b border-stroke-2/50 last:border-0'>
+                    <td className='px-3 py-2.5 text-foreground font-medium'>{r.trigger}</td>
+                    <td className='px-3 py-2.5 text-xental-text-primary-500'>{r.action}</td>
+                    <td className='px-3 py-2.5 text-xental-text-primary-500'>{r.thresholdKobo != null ? koboToNaira(r.thresholdKobo) : '—'}</td>
+                    <td className='px-3 py-2.5 text-xental-text-primary-500'>{r.minRiskScore ?? '—'}</td>
+                    <td className='px-3 py-2.5 text-xental-text-primary-500'>{r.priority}</td>
+                    <td className='px-3 py-2.5 text-right'>
+                      <button type='button' onClick={() => deleteRule.mutate(r.id)} disabled={deleteRule.isPending} className='text-destructive hover:opacity-80'>
+                        <Trash2 className='w-3.5 h-3.5 inline-block' />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className='grid grid-cols-1 sm:grid-cols-5 gap-3 items-end'>
+          <SelectField label='Trigger' value={rule.trigger} onChange={(v) => setRule((s) => ({ ...s, trigger: v }))} options={RULE_TRIGGERS} />
+          <SelectField label='Action' value={rule.action} onChange={(v) => setRule((s) => ({ ...s, action: v }))} options={RULE_ACTIONS} />
+          <InputField label='Threshold (₦)' value={rule.threshold} onChange={(v) => setRule((s) => ({ ...s, threshold: v }))} placeholder='optional' />
+          <InputField label='Min risk' value={rule.minRisk} onChange={(v) => setRule((s) => ({ ...s, minRisk: v }))} placeholder='optional' />
+          <div className='flex items-end gap-2'>
+            <div className='flex-1'>
+              <InputField label='Priority' value={rule.priority} onChange={(v) => setRule((s) => ({ ...s, priority: v }))} />
+            </div>
+            <Button size='sm' onClick={handleAddRule} disabled={createRule.isPending} className='gap-1'>
+              <Plus className='w-3.5 h-3.5' /> Add
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const [tab, setTab] = useState<Tab>('Profile');
 
@@ -531,6 +729,7 @@ export default function SettingsPage() {
         {tab === 'Profile' && <ProfileTab />}
         {tab === 'Team' && <TeamTab />}
         {tab === 'Developers' && <DevelopersTab />}
+        {tab === 'Settlement' && <SettlementTab />}
         {tab === 'Security' && <SecurityTab />}
       </div>
     </div>

@@ -1,55 +1,91 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import StatCard from '@/components/dashboard/StatCard';
+import { cn, koboToNaira, formatDate } from '@/lib/utils';
+import { useTransfers } from '@/api/transfers';
+import { SendPayoutModal } from '@/components/dashboard/payouts/SendPayoutModal';
+
+const STATUS_BADGE: Record<string, string> = {
+  Completed: 'bg-green-50 text-success',
+  Successful: 'bg-green-50 text-success',
+  Success: 'bg-green-50 text-success',
+  Failed: 'bg-red-50 text-destructive',
+  Pending: 'bg-orange-50 text-pending',
+  Processing: 'bg-orange-50 text-pending',
+};
+
+const isSuccess = (s: string | null) => /success|complete/i.test(s ?? '');
+const isFailed = (s: string | null) => /fail/i.test(s ?? '');
 
 export default function PayOutsPage() {
-  const router = useRouter();
+  const { data: transfers = [], isLoading } = useTransfers();
+  const [open, setOpen] = useState(false);
+
+  const total = transfers.reduce((sum, t) => sum + t.amountKobo, 0);
+  const successful = transfers.filter((t) => isSuccess(t.status)).length;
+  const failed = transfers.filter((t) => isFailed(t.status)).length;
 
   return (
     <div className='flex flex-col gap-8 h-full'>
-      <div>
-        <h1 className='text-[22px] font-bold text-foreground'>Pay-outs</h1>
-        <p className='text-sm text-xental-text-primary-400 mt-0.5'>
-          Monitor and track all outgoing payments from your platform
-        </p>
+      <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-3'>
+        <div>
+          <h1 className='text-[22px] font-bold text-foreground'>Pay-outs</h1>
+          <p className='text-sm text-xental-text-primary-400 mt-0.5'>
+            Monitor and track all outgoing payments from your platform
+          </p>
+        </div>
+        <Button onClick={() => setOpen(true)} className='gap-1.5 bg-action-blue hover:bg-action-blue/90'>
+          <Plus className='w-4 h-4' /> Send payout
+        </Button>
       </div>
 
       <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
-        <StatCard
-          label='Total payouts'
-          value='₦0'
-          icon='/images/dashboard/pay-out.svg'
-        />
-        <StatCard
-          label='Successful'
-          value='0'
-          icon='/images/dashboard/successful.svg'
-        />
-        <StatCard
-          label='Failed'
-          value='0'
-          icon='/images/dashboard/failed.svg'
-        />
+        <StatCard label='Total payouts' value={koboToNaira(total)} icon='/images/dashboard/pay-out.svg' />
+        <StatCard label='Successful' value={String(successful)} icon='/images/dashboard/successful.svg' />
+        <StatCard label='Failed' value={String(failed)} icon='/images/dashboard/failed.svg' />
       </div>
 
-      {/* Empty State */}
-      <div className='bg-white rounded-[12px] flex flex-col items-center justify-center flex-1 py-20 text-center'>
-        <h3 className='text-base font-medium text-foreground mb-1.5'>
-          No payout activity
-        </h3>
-        <p className='text-base text-muted mb-6'>
-          Payouts will appear here once a payout has been processed for your
-          platform
-        </p>
-        <Button
-          onClick={() => router.push('/dashboard/customers')}
-          className='h-[40px]! bg-action-blue hover:bg-action-blue/90 text-white rounded-lg px-6 h-9 text-xs font-medium'
-        >
-          View customers
-        </Button>
+      <div className='bg-white rounded-[12px] px-4 py-4 flex-1'>
+        <div className='overflow-x-auto'>
+          <table className='w-full text-xs'>
+            <thead>
+              <tr className='border-b border-stroke-2'>
+                <th className='text-left px-4 py-3 font-semibold text-foreground'>Reference</th>
+                <th className='text-left px-4 py-3 font-semibold text-foreground'>Recipient</th>
+                <th className='text-left px-4 py-3 font-semibold text-foreground'>Amount</th>
+                <th className='text-left px-4 py-3 font-semibold text-foreground'>Date</th>
+                <th className='text-left px-4 py-3 font-semibold text-foreground'>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading ? (
+                <tr><td colSpan={5} className='py-10 text-center text-xental-text-primary-400'>Loading payouts...</td></tr>
+              ) : transfers.length === 0 ? (
+                <tr><td colSpan={5} className='py-10 text-center text-xental-text-primary-400'>No payout activity yet</td></tr>
+              ) : (
+                transfers.map((t) => (
+                  <tr key={t.id} className='border-b border-stroke-2/50 last:border-0 hover:bg-xental-bg transition-colors'>
+                    <td className='px-4 py-3.5 text-xental-text-primary-500 font-medium'>{t.merchantTxRef}</td>
+                    <td className='px-4 py-3.5 text-xental-text-primary-500 font-mono'>{t.recipientAccountNumber}</td>
+                    <td className='px-4 py-3.5 text-foreground font-medium'>{koboToNaira(t.amountKobo)}</td>
+                    <td className='px-4 py-3.5 text-xental-text-primary-500'>{formatDate(t.createdAtUtc)}</td>
+                    <td className='px-4 py-3.5'>
+                      <span className={cn('px-2.5 py-1 rounded-md text-[11px] font-medium', STATUS_BADGE[t.status] ?? 'bg-gray-50 text-gray-500')}>
+                        {t.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
+
+      <SendPayoutModal open={open} onClose={() => setOpen(false)} />
     </div>
   );
 }
