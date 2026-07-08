@@ -36,7 +36,7 @@ import {
 } from '@/api/team';
 import { useSettlementConfig, useUpdateSettlementConfig, useSplits, useSetSplits } from '@/api/settlement';
 import { useRules, useCreateRule, useDeleteRule } from '@/api/rules';
-import { useBankLookup } from '@/api/transfers';
+import { useBankLookup, useBanks } from '@/api/transfers';
 import type { SplitLegInput } from '@/api/types/dashboard';
 
 type Tab = 'Profile' | 'Team' | 'Developers' | 'Settlement' | 'Splits' | 'Security';
@@ -568,6 +568,7 @@ function SettlementTab() {
   const createRule = useCreateRule();
   const deleteRule = useDeleteRule();
   const bankLookup = useBankLookup();
+  const { data: banks = [] } = useBanks();
 
   const [form, setForm] = useState({ accountNumber: '', bankCode: '', accountName: '', autoSettle: 'Off', minPayout: '' });
   const [rule, setRule] = useState({ trigger: 'Overpaid', action: 'Hold', threshold: '', minRisk: '', priority: '1' });
@@ -587,12 +588,17 @@ function SettlementTab() {
   const set = (k: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   // Auto-resolve the account holder name from account number + bank code.
-  const resolveAccountName = () => {
-    if (form.accountNumber.trim().length < 10 || !form.bankCode.trim()) return;
+  const resolve = (accountNumber: string, bankCode: string) => {
+    if (accountNumber.trim().length < 10 || !bankCode.trim()) return;
     bankLookup.mutate(
-      { accountNumber: form.accountNumber.trim(), bankCode: form.bankCode.trim() },
+      { accountNumber: accountNumber.trim(), bankCode: bankCode.trim() },
       { onSuccess: (res) => setForm((f) => ({ ...f, accountName: res.accountName })) }
     );
+  };
+
+  const onSelectBank = (code: string) => {
+    setForm((f) => ({ ...f, bankCode: code, accountName: '' }));
+    resolve(form.accountNumber, code);
   };
 
   const handleSaveConfig = () => {
@@ -626,8 +632,20 @@ function SettlementTab() {
       <div>
         <h3 className='text-sm font-semibold text-foreground mb-4'>Settlement account</h3>
         <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
-          <InputField label='Account number' value={form.accountNumber} onChange={set('accountNumber')} onBlur={resolveAccountName} placeholder='0123456789' />
-          <InputField label='Bank code' value={form.bankCode} onChange={set('bankCode')} onBlur={resolveAccountName} placeholder='000014' />
+          <InputField label='Account number' value={form.accountNumber} onChange={set('accountNumber')} onBlur={() => resolve(form.accountNumber, form.bankCode)} placeholder='0123456789' />
+          <div>
+            <label className='block text-xs text-xental-text-primary-400 mb-1'>Bank</label>
+            <select
+              value={form.bankCode}
+              onChange={(e) => onSelectBank(e.target.value)}
+              className='w-full border border-stroke-2 rounded-lg px-3 py-2 text-sm text-foreground bg-white focus:outline-none focus:ring-2 focus:ring-action-blue/30 focus:border-action-blue'
+            >
+              <option value=''>Select a bank…</option>
+              {banks.map((b) => (
+                <option key={b.code} value={b.code}>{b.name}</option>
+              ))}
+            </select>
+          </div>
           <InputField label='Account name' value={bankLookup.isPending ? 'Resolving…' : form.accountName} disabled placeholder='Auto-resolved from account + bank' />
           <InputField label='Minimum payout (₦)' value={form.minPayout} onChange={set('minPayout')} placeholder='0' />
           <SelectField label='Auto-settle' value={form.autoSettle} onChange={set('autoSettle')} options={['Off', 'On']} />

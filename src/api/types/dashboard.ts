@@ -207,6 +207,11 @@ export type BankLookupResponse = {
   bankCode: string;
 };
 
+export type BankResponse = {
+  name: string;
+  code: string;
+};
+
 export type TransferResponse = {
   id: string;
   merchantTxRef: string;
