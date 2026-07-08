@@ -36,7 +36,6 @@ export const API_TAGS: TagMeta[] = [
 
   // Platform
   { tag: 'AgentDiscovery', slug: 'agent-discovery', title: 'Agent Discovery', group: 'Platform', summary: 'Machine-readable capability map for AI agents.' },
-  { tag: 'Health', slug: 'health', title: 'Health', group: 'Platform', summary: 'Liveness and readiness probes.' },
 ];
 
 export const tagBySlug = (slug: string) => API_TAGS.find((t) => t.slug === slug);

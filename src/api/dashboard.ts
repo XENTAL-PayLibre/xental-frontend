@@ -29,6 +29,22 @@ export function useProfile() {
   });
 }
 
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: (payload: { currentPassword: string; newPassword: string }) =>
+      postRequest<void, typeof payload>({
+        url: API_ENDPOINTS.AUTH.CHANGE_PASSWORD,
+        payload,
+      }),
+    onSuccess: () => toast.success('Password updated.'),
+    onError: (error) => {
+      displayError(error, 'Unable to change your password. Please try again.', {
+        400: 'Your current password is incorrect, or the new password is too weak.',
+      });
+    },
+  });
+}
+
 export function useInsights() {
   return useQuery({
     queryKey: ['insights'],

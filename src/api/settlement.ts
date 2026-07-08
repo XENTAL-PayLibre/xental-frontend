@@ -5,7 +5,39 @@ import { toast } from 'sonner';
 import { getRequest, postRequest, putRequest } from '@/lib/http';
 import { displayError } from './auth';
 import { API_ENDPOINTS } from './api-endpoints';
-import type { EscrowHoldResponse, SettlementConfigResponse } from './types/dashboard';
+import type {
+  EscrowHoldResponse,
+  SettlementConfigResponse,
+  SplitLegResponse,
+  SplitLegInput,
+} from './types/dashboard';
+
+// ---- Split settlement (multi-beneficiary split legs) ----
+export function useSplits() {
+  return useQuery({
+    queryKey: ['settlement-splits'],
+    queryFn: () => getRequest<SplitLegResponse[]>({ url: API_ENDPOINTS.SETTLEMENT.SPLITS }),
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useSetSplits() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (splits: SplitLegInput[]) =>
+      putRequest<SplitLegResponse[], { splits: SplitLegInput[] }>({
+        url: API_ENDPOINTS.SETTLEMENT.SPLITS,
+        payload: { splits },
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['settlement-splits'] });
+      toast.success('Split rules saved.');
+    },
+    onError: (error) => {
+      displayError(error, 'Unable to save split rules. Please try again.');
+    },
+  });
+}
 
 // ---- Settlement configuration (payout account, auto-settle, min payout) ----
 export function useSettlementConfig() {

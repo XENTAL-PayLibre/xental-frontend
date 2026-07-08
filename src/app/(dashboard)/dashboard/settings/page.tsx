@@ -23,6 +23,7 @@ import {
   useDeleteWebhook,
   useWebhookDeliveries,
   useReplayDelivery,
+  useChangePassword,
 } from '@/api/dashboard';
 import {
   useTeam,
@@ -33,11 +34,12 @@ import {
   type TeamMember,
   type TeamRole,
 } from '@/api/team';
-import { useSettlementConfig, useUpdateSettlementConfig } from '@/api/settlement';
+import { useSettlementConfig, useUpdateSettlementConfig, useSplits, useSetSplits } from '@/api/settlement';
 import { useRules, useCreateRule, useDeleteRule } from '@/api/rules';
+import type { SplitLegInput } from '@/api/types/dashboard';
 
-type Tab = 'Profile' | 'Team' | 'Developers' | 'Settlement' | 'Security';
-const TABS: Tab[] = ['Profile', 'Team', 'Developers', 'Settlement', 'Security'];
+type Tab = 'Profile' | 'Team' | 'Developers' | 'Settlement' | 'Splits' | 'Security';
+const TABS: Tab[] = ['Profile', 'Team', 'Developers', 'Settlement', 'Splits', 'Security'];
 
 const ROLES: TeamRole[] = ['Admin', 'Employee', 'Developer'];
 
@@ -512,24 +514,22 @@ function PasswordField({
 }
 
 function SecurityTab() {
+  const changePassword = useChangePassword();
   const [form, setForm] = useState({ current: '', newPass: '', confirm: '' });
   const [show, setShow] = useState({ current: false, newPass: false, confirm: false });
-  const [twoFa, setTwoFa] = useState(false);
-  const [loading, setLoading] = useState(false);
 
   const set = (k: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
   const toggleShow = (k: keyof typeof show) => setShow((s) => ({ ...s, [k]: !s[k] }));
 
-  const canSave = form.current && form.newPass && form.confirm && form.newPass === form.confirm;
+  const canSave = !!form.current && !!form.newPass && !!form.confirm && form.newPass === form.confirm;
 
-  async function handleSave() {
+  function handleSave() {
     if (form.newPass !== form.confirm) { toast.error('Passwords do not match'); return; }
-    if (form.newPass.length < 8) { toast.error('Password must be at least 8 characters'); return; }
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setLoading(false);
-    setForm({ current: '', newPass: '', confirm: '' });
-    toast.success('Password updated successfully');
+    if (form.newPass.length < 12) { toast.error('New password must be at least 12 characters'); return; }
+    changePassword.mutate(
+      { currentPassword: form.current, newPassword: form.newPass },
+      { onSuccess: () => setForm({ current: '', newPass: '', confirm: '' }) }
+    );
   }
 
   return (
@@ -546,39 +546,11 @@ function SecurityTab() {
             <p className='text-xs text-destructive'>Passwords do not match</p>
           )}
           <div className='flex justify-end'>
-            <Button size='sm' onClick={handleSave} disabled={!canSave || loading}>
-              {loading ? 'Saving…' : 'Update password'}
+            <Button size='sm' onClick={handleSave} disabled={!canSave || changePassword.isPending}>
+              {changePassword.isPending ? 'Saving…' : 'Update password'}
             </Button>
           </div>
         </div>
-      </div>
-
-      {/* 2FA */}
-      <div className='border-t border-stroke-2 pt-6'>
-        <div className='flex items-start justify-between max-w-md'>
-          <div>
-            <h3 className='text-sm font-semibold text-foreground'>Two-Factor Authentication</h3>
-            <p className='text-xs text-xental-text-primary-400 mt-1'>
-              Add an extra layer of security to your account using an authenticator app.
-            </p>
-          </div>
-          <button
-            onClick={() => { setTwoFa((v) => !v); toast.success(twoFa ? '2FA disabled' : '2FA enabled'); }}
-            className={cn(
-              'relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors cursor-pointer mt-0.5',
-              twoFa ? 'bg-action-blue' : 'bg-stroke-2'
-            )}
-          >
-            <span className={cn('pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transition-transform', twoFa ? 'translate-x-4' : 'translate-x-0')} />
-          </button>
-        </div>
-        {twoFa && (
-          <div className='mt-4 bg-xental-bg rounded-lg px-4 py-3 max-w-md'>
-            <p className='text-xs text-xental-text-primary-500'>
-              2FA is enabled. Scan the QR code in your authenticator app — setup will be available once the backend is connected.
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -717,6 +689,116 @@ function SettlementTab() {
   );
 }
 
+type SplitRow = {
+  beneficiaryName: string;
+  accountNumber: string;
+  bankCode: string;
+  basis: 'Percentage' | 'Flat';
+  percent: string;
+  flatNaira: string;
+  priority: string;
+};
+
+function SplitsTab() {
+  const { data: splits = [], isLoading } = useSplits();
+  const save = useSetSplits();
+  const [rows, setRows] = useState<SplitRow[]>([]);
+
+  useEffect(() => {
+    setRows(
+      splits.map((s) => ({
+        beneficiaryName: s.beneficiaryName,
+        accountNumber: s.accountNumber,
+        bankCode: s.bankCode,
+        basis: s.basis === 'Flat' ? 'Flat' : 'Percentage',
+        percent: s.basis === 'Percentage' ? String(s.shareBps / 100) : '',
+        flatNaira: s.basis === 'Flat' ? String(s.flatKobo / 100) : '',
+        priority: String(s.priority),
+      }))
+    );
+  }, [splits]);
+
+  const addRow = () =>
+    setRows((r) => [
+      ...r,
+      { beneficiaryName: '', accountNumber: '', bankCode: '', basis: 'Percentage', percent: '', flatNaira: '', priority: String(r.length + 1) },
+    ]);
+  const removeRow = (i: number) => setRows((r) => r.filter((_, idx) => idx !== i));
+  const update = (i: number, patch: Partial<SplitRow>) => setRows((r) => r.map((row, idx) => (idx === i ? { ...row, ...patch } : row)));
+
+  const totalPct = rows.filter((r) => r.basis === 'Percentage').reduce((s, r) => s + (parseFloat(r.percent) || 0), 0);
+
+  const handleSave = () => {
+    const payload: SplitLegInput[] = rows.map((row) => ({
+      beneficiaryName: row.beneficiaryName.trim(),
+      accountNumber: row.accountNumber.trim(),
+      bankCode: row.bankCode.trim(),
+      basis: row.basis,
+      shareBps: row.basis === 'Percentage' ? Math.round((parseFloat(row.percent) || 0) * 100) : 0,
+      flatKobo: row.basis === 'Flat' ? Math.round((parseFloat(row.flatNaira) || 0) * 100) : 0,
+      priority: parseInt(row.priority) || 0,
+    }));
+    save.mutate(payload);
+  };
+
+  if (isLoading) return <div className='py-8 text-center text-xental-text-primary-400'>Loading split rules...</div>;
+
+  return (
+    <div className='flex flex-col gap-5'>
+      <div>
+        <h3 className='text-sm font-semibold text-foreground'>Split settlement</h3>
+        <p className='text-xs text-xental-text-primary-400 mt-1'>
+          Route each settlement across multiple beneficiaries. Percentage legs share the amount pro-rata; flat legs take a fixed amount first, by priority. Saving replaces all existing legs.
+        </p>
+      </div>
+
+      {rows.length === 0 ? (
+        <div className='rounded-lg border border-dashed border-stroke-2 py-8 text-center text-xs text-xental-text-primary-400'>
+          No split rules — settlements go to your main settlement account.
+        </div>
+      ) : (
+        <div className='flex flex-col gap-4'>
+          {rows.map((row, i) => (
+            <div key={i} className='rounded-lg border border-stroke-2 p-4'>
+              <div className='flex items-center justify-between mb-3'>
+                <span className='text-xs font-semibold text-foreground'>Beneficiary {i + 1}</span>
+                <button type='button' onClick={() => removeRow(i)} className='text-destructive hover:opacity-80' title='Remove'>
+                  <Trash2 className='w-3.5 h-3.5' />
+                </button>
+              </div>
+              <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
+                <InputField label='Beneficiary name' value={row.beneficiaryName} onChange={(v) => update(i, { beneficiaryName: v })} />
+                <InputField label='Account number' value={row.accountNumber} onChange={(v) => update(i, { accountNumber: v })} />
+                <InputField label='Bank code' value={row.bankCode} onChange={(v) => update(i, { bankCode: v })} placeholder='000014' />
+                <SelectField label='Basis' value={row.basis} onChange={(v) => update(i, { basis: v as 'Percentage' | 'Flat' })} options={['Percentage', 'Flat']} />
+                {row.basis === 'Percentage' ? (
+                  <InputField label='Share (%)' value={row.percent} onChange={(v) => update(i, { percent: v })} placeholder='e.g. 30' />
+                ) : (
+                  <InputField label='Flat amount (₦)' value={row.flatNaira} onChange={(v) => update(i, { flatNaira: v })} placeholder='0' />
+                )}
+                <InputField label='Priority' value={row.priority} onChange={(v) => update(i, { priority: v })} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {totalPct > 100 && (
+        <p className='text-xs text-destructive'>Percentage legs add up to {totalPct}% — they must not exceed 100%.</p>
+      )}
+
+      <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-3'>
+        <Button size='sm' variant='outline' onClick={addRow} className='gap-1 w-full sm:w-auto justify-center'>
+          <Plus className='w-3.5 h-3.5' /> Add beneficiary
+        </Button>
+        <Button size='sm' onClick={handleSave} disabled={save.isPending || totalPct > 100} className='w-full sm:w-auto justify-center'>
+          {save.isPending ? 'Saving...' : 'Save split rules'}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const [tab, setTab] = useState<Tab>('Profile');
 
@@ -733,6 +815,7 @@ export default function SettingsPage() {
         {tab === 'Team' && <TeamTab />}
         {tab === 'Developers' && <DevelopersTab />}
         {tab === 'Settlement' && <SettlementTab />}
+        {tab === 'Splits' && <SplitsTab />}
         {tab === 'Security' && <SecurityTab />}
       </div>
     </div>
