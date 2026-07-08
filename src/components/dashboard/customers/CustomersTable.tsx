@@ -73,17 +73,17 @@ export function CustomersTable({ data, isLoading }: CustomersTableProps) {
                     className='flex items-center gap-2 hover:opacity-80'
                   >
                     <div className='w-6 h-6 rounded-full bg-xental-blue-100 flex items-center justify-center text-[10px] font-bold text-action-blue shrink-0'>
-                      {(c.accountName ?? 'C').charAt(0).toUpperCase()}
+                      {(c.customerName ?? c.accountName ?? 'C').charAt(0).toUpperCase()}
                     </div>
                     <div>
                       <p className='font-medium text-foreground'>
-                        {c.accountName ?? '—'}
+                        {c.customerName ?? c.accountName ?? '—'}
                       </p>
                     </div>
                   </Link>
                 </td>
                 <td className='px-4 py-3 text-xental-text-primary-500'>
-                  —
+                  {c.customerEmail ?? '—'}
                 </td>
                 <td className='px-4 py-3 text-xental-text-primary-500 font-mono'>
                   {c.accountNumber ?? '—'}

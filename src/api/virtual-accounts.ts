@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { postRequest, getRequest } from '@/lib/http';
+import { postRequest, getRequest, deleteRequest } from '@/lib/http';
 import { displayError } from './auth'; // Shared display error
 import { API_ENDPOINTS } from './api-endpoints';
 import type { CreateVirtualAccountPayload } from './types/virtual-accounts';
@@ -47,6 +47,26 @@ export function useCreateVirtualAccount() {
     onError: (error) => {
       displayError(error, 'Unable to provision virtual account. Please try again.', {
         409: 'A virtual account already exists for this account reference.',
+      });
+    },
+  });
+}
+
+export function useDeleteVirtualAccount() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationKey: ['virtual-accounts', 'delete'],
+    mutationFn: (accountRef: string) =>
+      deleteRequest<void>({ url: `/virtual-accounts/${accountRef}` }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['virtual-accounts'] });
+      qc.invalidateQueries({ queryKey: ['insights'] });
+      toast.success('Customer deleted.');
+    },
+    onError: (error) => {
+      displayError(error, 'Unable to delete this customer. Please try again.', {
+        409: 'This customer has payment activity and cannot be deleted.',
       });
     },
   });

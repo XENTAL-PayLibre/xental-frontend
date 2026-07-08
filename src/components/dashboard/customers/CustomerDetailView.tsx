@@ -2,12 +2,13 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Download, MoreVertical } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft, Download, MoreVertical, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn, koboToNaira, formatDate } from '@/lib/utils';
 import FilterDropdown from '@/components/dashboard/FilterDropdown';
 import { useTransactions } from '@/api/dashboard';
-import { useVirtualAccount } from '@/api/virtual-accounts';
+import { useVirtualAccount, useDeleteVirtualAccount } from '@/api/virtual-accounts';
 
 type Tab = 'Recent transactions' | 'Profile';
 const TABS: Tab[] = ['Recent transactions', 'Profile'];
@@ -30,13 +31,23 @@ function DetailBlock({ label, value }: { label: string; value: string }) {
 }
 
 export function CustomerDetailView({ accountRef }: { accountRef: string }) {
+  const router = useRouter();
 
   const { data: profile, isLoading: isProfileLoading } = useVirtualAccount(accountRef);
   const { data: transactions = [], isLoading: isTxLoading } = useTransactions({ virtualAccountId: profile?.id });
+  const deleteCustomer = useDeleteVirtualAccount();
 
   const [tab, setTab] = useState<Tab>('Recent transactions');
   const [dateFilter, setDateFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+
+  const handleDelete = () => {
+    if (!profile?.accountRef) return;
+    if (!window.confirm('Delete this customer? This cannot be undone. Customers with payment activity cannot be deleted.')) return;
+    deleteCustomer.mutate(profile.accountRef, {
+      onSuccess: () => router.push('/dashboard/customers'),
+    });
+  };
 
   if (isProfileLoading) {
     return <div className="p-8 text-center text-xental-text-primary-400">Loading customer details...</div>;
@@ -57,19 +68,31 @@ export function CustomerDetailView({ accountRef }: { accountRef: string }) {
           <ArrowLeft className='w-4 h-4' />
           Back to customers
         </Link>
-        <h1 className='text-2xl font-bold text-foreground'>Customer Details</h1>
+        <div className='flex items-center justify-between gap-3'>
+          <h1 className='text-2xl font-bold text-foreground'>Customer Details</h1>
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={handleDelete}
+            disabled={deleteCustomer.isPending}
+            className='gap-1.5 border-destructive/40 text-destructive hover:bg-destructive/10'
+          >
+            <Trash2 className='w-3.5 h-3.5' />
+            {deleteCustomer.isPending ? 'Deleting...' : 'Delete customer'}
+          </Button>
+        </div>
       </div>
 
       {/* Profile Summary */}
       <div className='bg-white rounded-[12px] px-4 md:px-6 py-6 md:py-8 flex flex-col md:flex-row items-center md:items-start gap-6'>
         <div className='w-24 h-24 md:w-[120px] md:h-[120px] rounded-full overflow-hidden shrink-0 bg-xental-blue-100 flex items-center justify-center'>
           <span className='text-4xl font-bold text-action-blue'>
-            {(profile.accountName ?? 'C').charAt(0).toUpperCase()}
+            {(profile.customerName ?? profile.accountName ?? 'C').charAt(0).toUpperCase()}
           </span>
         </div>
         <div className='flex flex-col items-center md:items-start gap-4 md:gap-3 w-full'>
           <h2 className='text-xl md:text-lg font-semibold text-foreground'>
-            {profile.accountName ?? '—'}
+            {profile.customerName ?? profile.accountName ?? '—'}
           </h2>
           <div className='flex flex-wrap items-center justify-center md:justify-start gap-6 md:gap-12 w-full'>
             <div className='flex flex-col items-center md:items-start gap-1 text-center md:text-left'>
@@ -202,23 +225,31 @@ export function CustomerDetailView({ accountRef }: { accountRef: string }) {
 
           {tab === 'Profile' && (
             <div className='grid grid-cols-1 md:grid-cols-2 gap-y-10 gap-x-12 lg:gap-x-24 w-full'>
-              {/* Left Column */}
+              {/* Left Column — who the customer is */}
               <div className='flex flex-col gap-10'>
-                <DetailBlock label='Account name' value={profile.accountName ?? '—'} />
-                <div className='flex items-center gap-12 sm:gap-16'>
-                  <DetailBlock label='Country code' value={(profile as any).countryCode ?? '—'} />
-                  <DetailBlock label='Phone number' value={(profile as any).phone ?? '—'} />
-                </div>
-                <DetailBlock label='KYC' value={profile.status === 'Active' ? 'Verified' : 'Unverified'} />
+                <DetailBlock label='Customer name' value={profile.customerName ?? profile.accountName ?? '—'} />
+                <DetailBlock label='Email' value={profile.customerEmail ?? '—'} />
+                <DetailBlock label='Phone number' value={profile.customerPhone ?? '—'} />
+                <DetailBlock label='Customer reference' value={profile.accountRef ?? '—'} />
+                <DetailBlock label='Date created' value={formatDate(profile.createdAtUtc)} />
               </div>
 
-              {/* Right Column */}
+              {/* Right Column — the dedicated account + balances */}
               <div className='flex flex-col gap-10'>
-                <div className='flex items-center gap-12 sm:gap-16 lg:gap-24'>
-                  <DetailBlock label='Bank name' value={profile.bankName ?? '—'} />
-                  <DetailBlock label='Dedicated account' value={profile.accountNumber ?? '—'} />
+                <DetailBlock label='Bank name' value={profile.bankName ?? '—'} />
+                <DetailBlock label='Dedicated account' value={profile.accountNumber ?? '—'} />
+                <DetailBlock label='Account name' value={profile.accountName ?? '—'} />
+                <div className='flex items-center gap-12 sm:gap-16'>
+                  <DetailBlock
+                    label='Expected amount'
+                    value={profile.expectedAmountKobo != null ? koboToNaira(profile.expectedAmountKobo) : '—'}
+                  />
+                  <DetailBlock label='Amount paid' value={koboToNaira(profile.amountPaidKobo)} />
                 </div>
-                <DetailBlock label='Email' value={(profile as any).email ?? '—'} />
+                <div className='flex items-center gap-12 sm:gap-16'>
+                  <DetailBlock label='Payment state' value={profile.paymentState ?? '—'} />
+                  <DetailBlock label='Status' value={profile.status ?? '—'} />
+                </div>
               </div>
             </div>
           )}
