@@ -2,14 +2,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Wallet, Landmark, Users } from 'lucide-react';
+import { Plus, Landmark } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useSubMerchantsList } from '@/api/sub-merchants';
 import type { SubMerchantResponse } from '@/api/types/dashboard';
 import { CreateSubMerchantModal } from '@/components/dashboard/sub-merchants/CreateSubMerchantModal';
 import { PayoutAccountModal } from '@/components/dashboard/sub-merchants/PayoutAccountModal';
-import { BalanceModal } from '@/components/dashboard/sub-merchants/BalanceModal';
 
 const STATUS_BADGE: Record<string, string> = {
   Active: 'bg-green-50 text-success',
@@ -22,7 +21,6 @@ export default function SubMerchantsPage() {
   const { data: subMerchants = [], isLoading } = useSubMerchantsList();
   const [createOpen, setCreateOpen] = useState(false);
   const [payoutFor, setPayoutFor] = useState<SubMerchantResponse | null>(null);
-  const [balanceFor, setBalanceFor] = useState<SubMerchantResponse | null>(null);
 
   return (
     <div className='flex flex-col gap-8 h-full'>
@@ -57,12 +55,16 @@ export default function SubMerchantsPage() {
                 <tr><td colSpan={5} className='py-10 text-center text-xental-text-primary-400'>No sub-merchants yet</td></tr>
               ) : (
                 subMerchants.map((sm) => (
-                  <tr key={sm.id} className='border-b border-stroke-2/50 last:border-0 hover:bg-xental-bg transition-colors'>
+                  <tr
+                    key={sm.id}
+                    onClick={() => router.push(`/dashboard/sub-merchants/${sm.id}`)}
+                    className='border-b border-stroke-2/50 last:border-0 hover:bg-xental-bg transition-colors cursor-pointer'
+                  >
                     <td className='px-4 py-3.5 text-foreground font-medium'>{sm.name}</td>
                     <td className='px-4 py-3.5 text-xental-text-primary-500 font-mono'>{sm.reference}</td>
                     <td className='px-4 py-3.5 text-xental-text-primary-500'>
                       {sm.hasPayoutAccount ? (
-                        <span>{sm.settlementBankName} · {sm.settlementAccountNumber}</span>
+                        <span>{sm.settlementAccountName ?? sm.settlementBankName} · {sm.settlementAccountNumber}</span>
                       ) : (
                         <span className='text-pending'>Not set</span>
                       )}
@@ -72,18 +74,10 @@ export default function SubMerchantsPage() {
                         {sm.status ?? '—'}
                       </span>
                     </td>
-                    <td className='px-4 py-3.5 text-right'>
-                      <div className='inline-flex items-center gap-3'>
-                        <button type='button' onClick={() => router.push(`/dashboard/customers?subMerchant=${encodeURIComponent(sm.reference ?? '')}`)} className='inline-flex items-center gap-1 text-[11px] font-medium text-xental-text-primary-500 hover:text-foreground'>
-                          <Users className='w-3.5 h-3.5' /> Customers
-                        </button>
-                        <button type='button' onClick={() => setPayoutFor(sm)} className='inline-flex items-center gap-1 text-[11px] font-medium text-action-blue hover:opacity-80'>
-                          <Landmark className='w-3.5 h-3.5' /> Payout
-                        </button>
-                        <button type='button' onClick={() => setBalanceFor(sm)} className='inline-flex items-center gap-1 text-[11px] font-medium text-xental-text-primary-500 hover:text-foreground'>
-                          <Wallet className='w-3.5 h-3.5' /> Balance
-                        </button>
-                      </div>
+                    <td className='px-4 py-3.5 text-right' onClick={(e) => e.stopPropagation()}>
+                      <button type='button' onClick={() => setPayoutFor(sm)} className='inline-flex items-center gap-1 text-[11px] font-medium text-action-blue hover:opacity-80'>
+                        <Landmark className='w-3.5 h-3.5' /> Payout
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -95,7 +89,6 @@ export default function SubMerchantsPage() {
 
       <CreateSubMerchantModal open={createOpen} onClose={() => setCreateOpen(false)} />
       <PayoutAccountModal subMerchant={payoutFor} onClose={() => setPayoutFor(null)} />
-      <BalanceModal subMerchant={balanceFor} onClose={() => setBalanceFor(null)} />
     </div>
   );
 }
