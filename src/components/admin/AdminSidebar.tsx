@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import {
   Home,
@@ -17,7 +18,7 @@ import {
   HelpCircle,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { removeToken, COOKIE_KEYS } from '@/lib/get-token';
+import { removeToken, getCookie, COOKIE_KEYS } from '@/lib/get-token';
 import { cn } from '@/lib/utils';
 import { useProfile } from '@/api/dashboard';
 
@@ -30,9 +31,18 @@ const NAV_ITEMS = [
 export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [role, setRole] = useState('Xental Staff');
+
+  useEffect(() => {
+    const storedRole = getCookie(COOKIE_KEYS.admin_role);
+    if (storedRole) {
+      setRole(storedRole);
+    }
+  }, []);
 
   async function handleLogout() {
     removeToken(COOKIE_KEYS.admin_token);
+    removeToken(COOKIE_KEYS.admin_role);
     router.push('/admin/login');
   }
 
@@ -118,7 +128,7 @@ export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }
       <div className='flex items-center gap-2 mt-4 px-2'>
         <div className='flex flex-col min-w-0'>
           <span className='text-sm font-semibold text-foreground truncate'>Admin Portal</span>
-          <span className='text-xs text-xental-text-primary-400 truncate'>Xental Staff</span>
+          <span className='text-xs text-xental-text-primary-400 truncate'>{role}</span>
         </div>
       </div>
     </aside>

@@ -25,7 +25,7 @@ export default function SettingsView() {
   };
 
   return (
-    <div className='flex flex-col gap-6 max-w-5xl mx-auto w-full'>
+    <div className='flex flex-col gap-5'>
       <div>
         <h1 className='text-2xl font-bold text-foreground'>Account Settings</h1>
         <p className='text-sm text-xental-text-primary-400 mt-0.5'>

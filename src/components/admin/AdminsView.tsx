@@ -18,7 +18,7 @@ export default function AdminsView() {
   const totalPages = Math.max(1, Math.ceil(admins.length / PAGE_SIZE));
 
   return (
-    <div className='flex flex-col gap-6 max-w-5xl mx-auto'>
+    <div className='flex flex-col gap-5'>
       <div className='flex flex-col sm:flex-row sm:items-start justify-between gap-4'>
         <div>
           <h1 className='text-2xl font-bold text-foreground'>Internal Admin Management</h1>
