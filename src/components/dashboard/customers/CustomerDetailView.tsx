@@ -3,18 +3,23 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Download, MoreVertical, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { ArrowLeft, Download, Link2, Copy, RotateCcw, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn, koboToNaira, formatDate } from '@/lib/utils';
 import FilterDropdown from '@/components/dashboard/FilterDropdown';
-import { useTransactions } from '@/api/dashboard';
+import { useTransactions, useRefundTransaction } from '@/api/dashboard';
 import { useVirtualAccount, useDeleteVirtualAccount } from '@/api/virtual-accounts';
+import { useCreateCheckoutSession } from '@/api/checkout';
+import { useHoldSettlement, useReleaseSettlement } from '@/api/settlement';
+import { CustomerSubscriptions } from './CustomerSubscriptions';
 
-type Tab = 'Recent transactions' | 'Profile';
-const TABS: Tab[] = ['Recent transactions', 'Profile'];
+type Tab = 'Recent transactions' | 'Subscriptions' | 'Profile';
+const TABS: Tab[] = ['Recent transactions', 'Subscriptions', 'Profile'];
 
 const STATUS_BADGE: Record<string, string> = {
   Successful: 'bg-green-50 text-success',
+  Success: 'bg-green-50 text-success',
   Failed: 'bg-red-50 text-destructive',
   Pending: 'bg-orange-50 text-pending',
 };
@@ -34,12 +39,17 @@ export function CustomerDetailView({ accountRef }: { accountRef: string }) {
   const router = useRouter();
 
   const { data: profile, isLoading: isProfileLoading } = useVirtualAccount(accountRef);
-  const { data: transactions = [], isLoading: isTxLoading } = useTransactions({ virtualAccountId: profile?.id });
+  const { data: transactions = [], isLoading: isTxLoading } = useTransactions({ accountRef });
   const deleteCustomer = useDeleteVirtualAccount();
+  const createLink = useCreateCheckoutSession();
+  const holdSettlement = useHoldSettlement();
+  const releaseSettlement = useReleaseSettlement();
+  const refund = useRefundTransaction();
 
   const [tab, setTab] = useState<Tab>('Recent transactions');
   const [dateFilter, setDateFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [paymentLink, setPaymentLink] = useState<string | null>(null);
 
   const handleDelete = () => {
     if (!profile?.accountRef) return;
@@ -47,6 +57,25 @@ export function CustomerDetailView({ accountRef }: { accountRef: string }) {
     deleteCustomer.mutate(profile.accountRef, {
       onSuccess: () => router.push('/dashboard/customers'),
     });
+  };
+
+  const handlePaymentLink = () => {
+    if (!profile?.accountRef) return;
+    createLink.mutate(
+      { accountRef: profile.accountRef },
+      { onSuccess: (res) => setPaymentLink(res.snapshotUrl) }
+    );
+  };
+
+  const handleRefund = (reference: string | null) => {
+    if (!reference) return;
+    if (!window.confirm('Refund the overpaid surplus on this transaction to the payer?')) return;
+    refund.mutate({ reference });
+  };
+
+  const copyLink = () => {
+    if (!paymentLink) return;
+    navigator.clipboard.writeText(paymentLink).then(() => toast.success('Payment link copied'));
   };
 
   if (isProfileLoading) {
@@ -68,19 +97,59 @@ export function CustomerDetailView({ accountRef }: { accountRef: string }) {
           <ArrowLeft className='w-4 h-4' />
           Back to customers
         </Link>
-        <div className='flex items-center justify-between gap-3'>
+        <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-3'>
           <h1 className='text-2xl font-bold text-foreground'>Customer Details</h1>
-          <Button
-            variant='outline'
-            size='sm'
-            onClick={handleDelete}
-            disabled={deleteCustomer.isPending}
-            className='gap-1.5 border-destructive/40 text-destructive hover:bg-destructive/10'
-          >
-            <Trash2 className='w-3.5 h-3.5' />
-            {deleteCustomer.isPending ? 'Deleting...' : 'Delete customer'}
-          </Button>
+          <div className='flex flex-wrap items-center gap-2'>
+            <Button
+              variant='outline'
+              size='sm'
+              onClick={handlePaymentLink}
+              disabled={createLink.isPending}
+              className='gap-1.5'
+            >
+              <Link2 className='w-3.5 h-3.5' />
+              {createLink.isPending ? 'Generating...' : 'Payment link'}
+            </Button>
+            <Button
+              variant='outline'
+              size='sm'
+              onClick={() => profile.accountRef && holdSettlement.mutate({ accountRef: profile.accountRef })}
+              disabled={holdSettlement.isPending}
+            >
+              Hold payout
+            </Button>
+            <Button
+              variant='outline'
+              size='sm'
+              onClick={() => profile.accountRef && releaseSettlement.mutate(profile.accountRef)}
+              disabled={releaseSettlement.isPending}
+            >
+              Release
+            </Button>
+            <Button
+              variant='outline'
+              size='sm'
+              onClick={handleDelete}
+              disabled={deleteCustomer.isPending}
+              className='gap-1.5 border-destructive/40 text-destructive hover:bg-destructive/10'
+            >
+              <Trash2 className='w-3.5 h-3.5' />
+              {deleteCustomer.isPending ? 'Deleting...' : 'Delete'}
+            </Button>
+          </div>
         </div>
+        {paymentLink && (
+          <div className='flex items-center justify-between gap-3 rounded-lg border border-stroke-2 bg-xental-bg px-3 py-2'>
+            <span className='truncate text-xs text-xental-text-primary-500'>{paymentLink}</span>
+            <button
+              type='button'
+              onClick={copyLink}
+              className='shrink-0 flex items-center gap-1 text-xs text-action-blue hover:opacity-80'
+            >
+              <Copy className='w-3.5 h-3.5' /> Copy
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Profile Summary */}
@@ -166,19 +235,21 @@ export function CustomerDetailView({ accountRef }: { accountRef: string }) {
                 <table className='w-full text-xs'>
                   <thead>
                     <tr className='border-b border-stroke-2'>
-                      <th className='text-left px-4 py-3 font-semibold text-foreground w-[25%]'>
+                      <th className='text-left px-4 py-3 font-semibold text-foreground w-[22%]'>
                         Transaction ID
                       </th>
-                      <th className='text-left px-4 py-3 font-semibold text-foreground w-[25%]'>
+                      <th className='text-left px-4 py-3 font-semibold text-foreground w-[20%]'>
                         Date
                       </th>
-                      <th className='text-left px-4 py-3 font-semibold text-foreground w-[25%]'>
+                      <th className='text-left px-4 py-3 font-semibold text-foreground w-[18%]'>
                         Amount
                       </th>
-                      <th className='text-left px-4 py-3 font-semibold text-foreground w-[253px]'>
+                      <th className='text-left px-4 py-3 font-semibold text-foreground w-[20%]'>
                         Status
                       </th>
-                      <th className='p py-3 w-8' />
+                      <th className='text-right px-4 py-3 font-semibold text-foreground'>
+                        Action
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -187,40 +258,58 @@ export function CustomerDetailView({ accountRef }: { accountRef: string }) {
                     ) : transactions.length === 0 ? (
                       <tr><td colSpan={5} className="py-8 text-center text-xental-text-primary-400">No transactions found</td></tr>
                     ) : (
-                      transactions.map((tx) => (
-                        <tr
-                          key={tx.id}
-                          className='border-b border-stroke-2/50 last:border-0 hover:bg-xental-bg transition-colors'
-                        >
-                          <td className='px-4 py-3.5 text-xental-text-primary-500 font-medium'>
-                            {tx.reference ?? '—'}
-                          </td>
-                          <td className='px-4 py-3.5 text-xental-text-primary-500'>
-                            {formatDate(tx.occurredAtUtc)}
-                          </td>
-                          <td className='px-4 py-3.5 text-foreground font-medium'>
-                            {koboToNaira(tx.amountKobo)}
-                          </td>
-                          <td className='px-3 py-3.5'>
-                            <span
-                              className={cn(
-                                'px-2.5 py-1 rounded-md text-[11px] font-medium',
-                                STATUS_BADGE[tx.status ?? 'Pending'] ?? 'bg-gray-50 text-gray-500'
+                      transactions.map((tx) => {
+                        const isOverpaid = tx.reconciliation === 'Overpaid';
+                        return (
+                          <tr
+                            key={tx.id}
+                            className='border-b border-stroke-2/50 last:border-0 hover:bg-xental-bg transition-colors'
+                          >
+                            <td className='px-4 py-3.5 text-xental-text-primary-500 font-medium'>
+                              {tx.reference ?? '—'}
+                            </td>
+                            <td className='px-4 py-3.5 text-xental-text-primary-500'>
+                              {formatDate(tx.occurredAtUtc)}
+                            </td>
+                            <td className='px-4 py-3.5 text-foreground font-medium'>
+                              {koboToNaira(tx.amountKobo)}
+                            </td>
+                            <td className='px-3 py-3.5'>
+                              <span
+                                className={cn(
+                                  'px-2.5 py-1 rounded-md text-[11px] font-medium',
+                                  STATUS_BADGE[tx.status ?? 'Pending'] ?? 'bg-gray-50 text-gray-500'
+                                )}
+                              >
+                                {tx.reconciliation ?? tx.status ?? 'Pending'}
+                              </span>
+                            </td>
+                            <td className='px-4 py-3.5 text-right'>
+                              {isOverpaid ? (
+                                <button
+                                  type='button'
+                                  onClick={() => handleRefund(tx.reference)}
+                                  disabled={refund.isPending}
+                                  className='inline-flex items-center gap-1 text-[11px] font-medium text-action-blue hover:opacity-80 disabled:opacity-50'
+                                >
+                                  <RotateCcw className='w-3.5 h-3.5' /> Refund surplus
+                                </button>
+                              ) : (
+                                <span className='text-xental-text-primary-400'>—</span>
                               )}
-                            >
-                              {tx.status ?? 'Pending'}
-                            </span>
-                          </td>
-                          <td className='px-4 py-3.5 text-right'>
-                            <MoreVertical className='w-3.5 h-3.5 text-xental-text-primary-400 cursor-pointer inline-block' />
-                          </td>
-                        </tr>
-                      ))
+                            </td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>
               </div>
             </div>
+          )}
+
+          {tab === 'Subscriptions' && profile.accountRef && (
+            <CustomerSubscriptions accountRef={profile.accountRef} />
           )}
 
           {tab === 'Profile' && (
