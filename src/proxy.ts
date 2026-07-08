@@ -14,17 +14,17 @@ export function proxy(request: NextRequest) {
   if (pathname.startsWith('/admin')) {
     const hasAdminCookie = request.cookies.has('xnt_admin_access');
     const isAdminAuthRoute = pathname.startsWith('/admin/login');
-    
+
     if (hasAdminCookie && isAdminAuthRoute) {
-      return NextResponse.redirect(new URL('/admin/reconciliation', request.url));
+      return NextResponse.redirect(new URL('/admin/onboarding', request.url));
     }
-    
+
     if (!hasAdminCookie && !isAdminAuthRoute) {
       const adminLoginUrl = new URL('/admin/login', request.url);
       adminLoginUrl.searchParams.set('callbackUrl', pathname);
       return NextResponse.redirect(adminLoginUrl);
     }
-    
+
     return NextResponse.next();
   }
 
