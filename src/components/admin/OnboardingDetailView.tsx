@@ -8,54 +8,11 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Modal from '@/components/ui/Modal';
-import type { AdminTenantDetailsResponse } from '@/api/types/admin';
-
-const MOCK_DETAIL: AdminTenantDetailsResponse = {
-  summary: {
-    tenantId: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    tenantEmail: "founder@fintech.io",
-    tier: "starter",
-    developerKycStatus: "Approved",
-    businessKybStatus: "UnderReview",
-    submittedAtUtc: "2026-07-06T23:46:32.056Z"
-  },
-  checks: [
-    {
-      kind: "Identity Verification",
-      outcome: "Passed",
-      provider: "Onfido",
-      detail: "All documents clear. Facial match 98%.",
-      checkedAtUtc: "2026-07-07T00:04:04.049Z"
-    },
-    {
-      kind: "Company Registry",
-      outcome: "Pending",
-      provider: "OpenCorporates",
-      detail: "Awaiting manual review of articles of incorporation.",
-      checkedAtUtc: "2026-07-07T00:05:12.000Z"
-    }
-  ],
-  documents: [
-    {
-      type: "Passport",
-      reviewStatus: "Verified",
-      downloadUrl: "#"
-    },
-    {
-      type: "Certificate of Incorporation",
-      reviewStatus: "Pending",
-      downloadUrl: "#"
-    }
-  ]
-};
 
 export default function OnboardingDetailView({ tenantId }: { tenantId: string }) {
   const router = useRouter();
-  const { data: rawDetail, isLoading } = useAdminTenantDetails(tenantId);
+  const { data: detail, isLoading } = useAdminTenantDetails(tenantId);
   const { mutate: performAction, isPending } = useReviewAction();
-
-  // Use mock data if API is empty for UI testing
-  const detail = rawDetail || MOCK_DETAIL;
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'approve' | 'reject' | 'request-info'>('reject');
@@ -85,9 +42,14 @@ export default function OnboardingDetailView({ tenantId }: { tenantId: string })
 
   const modalConfig = getModalConfig();
 
-  if (isLoading && !rawDetail) {
+  if (isLoading) {
     return <div className="p-8 text-center text-muted">Loading tenant details...</div>;
   }
+
+  if (!detail) {
+    return <div className="p-8 text-center text-muted">Application not found.</div>;
+  }
+
 
   return (
     <div className='flex flex-col gap-5'>

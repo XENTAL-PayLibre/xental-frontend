@@ -20,15 +20,28 @@ const appName = 'Xental';
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
   title: {
-    default: appName,
+    default: `${appName} — Fintech Infrastructure for Modern Businesses`,
     template: `%s · ${appName}`,
   },
   description:
-    'Xental — The all-in-one payment and financial operations platform for businesses. Accept payments, manage settlements, and scale with confidence.',
+    'Xental is the fintech infrastructure layer that powers payments, settlements, and financial operations for modern businesses. Accept payments, reconcile in real time, and scale with confidence.',
   icons: {
-    icon: 'images/logo-icon.svg',
-    shortcut: 'images/logo-icon.svg',
-    apple: 'images/logo-icon.svg',
+    icon: '/images/logo-icon.svg',
+    shortcut: '/images/logo-icon.svg',
+    apple: '/images/logo-icon.svg',
+  },
+  openGraph: {
+    title: `${appName} — Fintech Infrastructure for Modern Businesses`,
+    description: 'The fintech infrastructure layer that powers payments, settlements, and financial operations for modern businesses.',
+    siteName: appName,
+    images: [{ url: '/images/og-image.png', width: 1200, height: 630, alt: 'Xental' }],
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: `${appName} — Fintech Infrastructure for Modern Businesses`,
+    description: 'The fintech infrastructure layer that powers payments, settlements, and financial operations for modern businesses.',
+    images: ['/images/og-image.png'],
   },
 };
 

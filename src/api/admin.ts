@@ -16,6 +16,7 @@ import type {
   FailedSettlement,
   CreateAdminRequest,
   EnrollMfaResponse,
+  Admin,
 } from './types/admin';
 import { getCookie, setToken, COOKIE_KEYS } from '@/lib/get-token';
 
@@ -40,6 +41,17 @@ export function useAdminLogin() {
       }
     },
     onError: (error) => displayError(error),
+  });
+}
+
+export function useListAdmins() {
+  return useQuery({
+    queryKey: ['admin', 'list'],
+    queryFn: () => getRequest<Admin[]>({
+      url: API_ENDPOINTS.ADMIN.LIST_ADMINS,
+      headers: getAdminHeaders(),
+    }),
+    staleTime: 60 * 1000,
   });
 }
 

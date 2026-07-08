@@ -57,6 +57,7 @@ export const API_ENDPOINTS = {
     SETTLEMENTS_FAILED: '/admin/reconciliation/settlements/failed',
     RETRY_SETTLEMENT: (virtualAccountId: string) => `/admin/reconciliation/settlements/${virtualAccountId}/retry`,
     CREATE_ADMIN: '/admin/admins',
+    LIST_ADMINS: '/admin/admins',
     ENROLL_MFA: '/admin/mfa/enroll',
   },
 } as const;

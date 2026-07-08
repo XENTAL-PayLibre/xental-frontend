@@ -11,6 +11,7 @@ import type {
   DeveloperProfileResponse,
   WebhookEndpointResponse,
   SimulatedDepositResponse,
+  TransactionSummaryResponse,
 } from './types/dashboard';
 import { API_ENDPOINTS } from './api-endpoints';
 
@@ -156,5 +157,14 @@ export function useSimulateDeposit() {
       qc.invalidateQueries({ queryKey: ['transactions'] });
       qc.invalidateQueries({ queryKey: ['insights'] });
     },
+  });
+}
+
+export function useTransactionsSummary() {
+  return useQuery({
+    queryKey: ['transactions', 'summary'],
+    queryFn: () =>
+      getRequest<TransactionSummaryResponse>({ url: '/transactions/summary' }),
+    staleTime: 60 * 1000,
   });
 }
