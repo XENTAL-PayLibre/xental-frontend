@@ -46,6 +46,9 @@ export type VirtualAccountResponse = {
   accountNumber: string | null;
   bankName: string | null;
   accountName: string | null;
+  customerName: string | null;
+  customerEmail: string | null;
+  customerPhone: string | null;
   expectedAmountKobo: number | null;
   amountPaidKobo: number;
   deficitKobo: number;

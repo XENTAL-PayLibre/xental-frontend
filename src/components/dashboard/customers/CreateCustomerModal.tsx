@@ -1,10 +1,14 @@
 'use client';
 
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { z } from 'zod';
+import { toast } from 'sonner';
+import { Copy, CheckCircle2 } from 'lucide-react';
 import { CreateCustomerSchema } from '@/schemas';
 import { useCreateVirtualAccount } from '@/api/virtual-accounts';
+import type { VirtualAccountResponse } from '@/api/types/dashboard';
 import Modal from '@/components/ui/Modal';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,6 +26,7 @@ interface CreateCustomerModalProps {
 
 export function CreateCustomerModal({ open, onClose }: CreateCustomerModalProps) {
   const createCustomer = useCreateVirtualAccount();
+  const [created, setCreated] = useState<VirtualAccountResponse | null>(null);
 
   const form = useForm<z.infer<typeof CreateCustomerSchema>>({
     resolver: standardSchemaResolver(CreateCustomerSchema),
@@ -29,7 +34,7 @@ export function CreateCustomerModal({ open, onClose }: CreateCustomerModalProps)
       name: '',
       email: '',
       phone: '',
-      expectedAmountKobo: 0,
+      expectedAmount: 0,
       expiryDateUtc: '',
       subMerchantRef: '',
     },
@@ -42,16 +47,18 @@ export function CreateCustomerModal({ open, onClose }: CreateCustomerModalProps)
         name: values.name,
         email: values.email,
         phone: values.phone,
-        ...(values.expectedAmountKobo && values.expectedAmountKobo > 0
-          ? { expectedAmountKobo: values.expectedAmountKobo }
+        // The form takes naira; the API expects kobo.
+        ...(values.expectedAmount && values.expectedAmount > 0
+          ? { expectedAmountKobo: Math.round(values.expectedAmount * 100) }
           : {}),
         ...(values.expiryDateUtc ? { expiryDateUtc: values.expiryDateUtc } : {}),
         ...(values.subMerchantRef ? { subMerchantRef: values.subMerchantRef } : {}),
       },
       {
-        onSuccess: () => {
+        onSuccess: (response) => {
           form.reset();
-          onClose();
+          // Show the provisioned NUBAN so the merchant can share where to pay.
+          setCreated(response);
         },
       }
     );
@@ -59,11 +66,63 @@ export function CreateCustomerModal({ open, onClose }: CreateCustomerModalProps)
 
   const handleClose = () => {
     form.reset();
+    setCreated(null);
     onClose();
+  };
+
+  const copy = (label: string, value?: string | null) => {
+    if (!value) return;
+    navigator.clipboard.writeText(value).then(() => toast.success(`${label} copied`));
   };
 
   const inputClass =
     'w-full rounded-lg border border-stroke-2 px-3 py-2 text-sm outline-none focus:border-action-blue bg-transparent text-foreground';
+
+  if (created) {
+    const rows: Array<{ label: string; value: string | null }> = [
+      { label: 'Bank', value: created.bankName },
+      { label: 'Account Number', value: created.accountNumber },
+      { label: 'Account Name', value: created.accountName },
+    ];
+    return (
+      <Modal open={open} onClose={handleClose} title='Customer Created' className='max-w-lg'>
+        <div className='mt-2 space-y-4'>
+          <div className='flex items-center gap-2 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700 dark:bg-green-950/40 dark:text-green-400'>
+            <CheckCircle2 className='h-4 w-4 shrink-0' />
+            <span>Share these details with the customer to receive their pay-in.</span>
+          </div>
+          <div className='divide-y divide-stroke-2 rounded-lg border border-stroke-2'>
+            {rows.map((r) => (
+              <div key={r.label} className='flex items-center justify-between gap-3 px-3 py-2.5'>
+                <div className='min-w-0'>
+                  <p className='text-[11px] uppercase tracking-wide text-muted-foreground'>{r.label}</p>
+                  <p className='truncate text-sm font-medium text-foreground'>{r.value || '—'}</p>
+                </div>
+                {r.value ? (
+                  <button
+                    type='button'
+                    onClick={() => copy(r.label, r.value)}
+                    className='shrink-0 rounded-md p-1.5 text-muted-foreground hover:bg-stroke-2/40 hover:text-foreground'
+                    aria-label={`Copy ${r.label}`}
+                  >
+                    <Copy className='h-4 w-4' />
+                  </button>
+                ) : null}
+              </div>
+            ))}
+          </div>
+          {created.expectedAmountKobo ? (
+            <p className='text-xs text-muted-foreground'>
+              Expected amount: ₦{(created.expectedAmountKobo / 100).toLocaleString()}
+            </p>
+          ) : null}
+          <div className='flex justify-end pt-1'>
+            <Button type='button' onClick={handleClose}>Done</Button>
+          </div>
+        </div>
+      </Modal>
+    );
+  }
 
   return (
     <Modal
@@ -137,18 +196,20 @@ export function CreateCustomerModal({ open, onClose }: CreateCustomerModalProps)
           <div className='grid grid-cols-2 gap-4'>
             <FormField
               control={form.control}
-              name='expectedAmountKobo'
+              name='expectedAmount'
               render={({ field }) => (
                 <FormItem>
                   <label className='mb-1 block text-xs font-medium text-foreground'>
-                    Expected Amount (Kobo)
+                    Expected Amount (₦)
                   </label>
                   <FormControl>
                     <input
                       type='number'
+                      min='0'
+                      step='0.01'
                       {...field}
                       value={field.value || ''}
-                      onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                       placeholder='0'
                       className={inputClass}
                     />
