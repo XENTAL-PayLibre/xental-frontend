@@ -11,19 +11,26 @@ import { cn, formatDate } from '@/lib/utils';
 import type { VirtualAccountResponse } from '@/api/types/dashboard';
 
 import { useVirtualAccountsList } from '@/api/virtual-accounts';
+import { useSubMerchantsList } from '@/api/sub-merchants';
 import { CustomersTable } from '@/components/dashboard/customers/CustomersTable';
 import { CreateCustomerModal } from '@/components/dashboard/customers/CreateCustomerModal';
 import { Pagination } from '@/components/ui/Pagination';
 
 const PAGE_SIZE = 8;
 
+// Read the initial sub-merchant filter from the URL (?subMerchant=ref) on the client.
+const initialSubMerchant = () =>
+  typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('subMerchant') ?? '' : '';
+
 export function CustomersView() {
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [subMerchantFilter, setSubMerchantFilter] = useState(initialSubMerchant);
   const [page, setPage] = useState(1);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const { data: virtualAccounts = [], isLoading } = useVirtualAccountsList();
+  const { data: subMerchants = [] } = useSubMerchantsList();
+  const { data: virtualAccounts = [], isLoading } = useVirtualAccountsList(subMerchantFilter || undefined);
 
 
   const filtered = useMemo(() => {
@@ -89,6 +96,18 @@ export function CustomersView() {
             />
           </div>
           <div className='flex items-center gap-2 w-full sm:w-auto justify-end'>
+            {subMerchants.length > 0 && (
+              <select
+                value={subMerchantFilter}
+                onChange={(e) => { setSubMerchantFilter(e.target.value); setPage(1); }}
+                className='px-2.5 py-1.5 text-xs border border-stroke-2 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-action-blue/30 focus:border-action-blue'
+              >
+                <option value=''>All sub-merchants</option>
+                {subMerchants.map((sm) => (
+                  <option key={sm.id} value={sm.reference ?? ''}>{sm.name}</option>
+                ))}
+              </select>
+            )}
             <FilterDropdown
               label='Status'
               options={['Active', 'Inactive']}

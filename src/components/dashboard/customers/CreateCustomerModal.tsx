@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { Copy, CheckCircle2 } from 'lucide-react';
 import { CreateCustomerSchema } from '@/schemas';
 import { useCreateVirtualAccount } from '@/api/virtual-accounts';
+import { useSubMerchantsList } from '@/api/sub-merchants';
 import type { VirtualAccountResponse } from '@/api/types/dashboard';
 import Modal from '@/components/ui/Modal';
 import { Button } from '@/components/ui/button';
@@ -26,6 +27,7 @@ interface CreateCustomerModalProps {
 
 export function CreateCustomerModal({ open, onClose }: CreateCustomerModalProps) {
   const createCustomer = useCreateVirtualAccount();
+  const { data: subMerchants = [] } = useSubMerchantsList();
   const [created, setCreated] = useState<VirtualAccountResponse | null>(null);
 
   const form = useForm<z.infer<typeof CreateCustomerSchema>>({
@@ -259,10 +261,17 @@ export function CreateCustomerModal({ open, onClose }: CreateCustomerModalProps)
             render={({ field }) => (
               <FormItem>
                 <label className='mb-1 block text-xs font-medium text-foreground'>
-                  Sub-Merchant Reference (Optional)
+                  Sub-Merchant (Optional)
                 </label>
                 <FormControl>
-                  <input {...field} value={field.value || ''} placeholder='SUB-MERCH-456' className={inputClass} />
+                  <select {...field} value={field.value || ''} className={inputClass}>
+                    <option value=''>None — settle to my main account</option>
+                    {subMerchants.map((sm) => (
+                      <option key={sm.id} value={sm.reference ?? ''}>
+                        {sm.name}{sm.reference ? ` (${sm.reference})` : ''}
+                      </option>
+                    ))}
+                  </select>
                 </FormControl>
                 <FormMessage className='text-[10px]' />
               </FormItem>

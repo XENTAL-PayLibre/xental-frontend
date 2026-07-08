@@ -8,10 +8,13 @@ import { API_ENDPOINTS } from './api-endpoints';
 import type { CreateVirtualAccountPayload } from './types/virtual-accounts';
 import type { VirtualAccountResponse } from './types/dashboard';
 
-export function useVirtualAccountsList() {
+export function useVirtualAccountsList(subMerchantRef?: string) {
   return useQuery({
-    queryKey: ['virtual-accounts'],
-    queryFn: () => getRequest<VirtualAccountResponse[]>({ url: API_ENDPOINTS.VIRTUAL_ACCOUNTS.CREATE }),
+    queryKey: ['virtual-accounts', { subMerchantRef: subMerchantRef ?? null }],
+    queryFn: () =>
+      getRequest<VirtualAccountResponse[]>({
+        url: `${API_ENDPOINTS.VIRTUAL_ACCOUNTS.LIST}${subMerchantRef ? `?subMerchantRef=${encodeURIComponent(subMerchantRef)}` : ''}`,
+      }),
     staleTime: 60 * 1000,
   });
 }

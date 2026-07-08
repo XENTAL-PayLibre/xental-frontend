@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Wallet, Landmark } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Plus, Wallet, Landmark, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useSubMerchantsList } from '@/api/sub-merchants';
@@ -17,6 +18,7 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 export default function SubMerchantsPage() {
+  const router = useRouter();
   const { data: subMerchants = [], isLoading } = useSubMerchantsList();
   const [createOpen, setCreateOpen] = useState(false);
   const [payoutFor, setPayoutFor] = useState<SubMerchantResponse | null>(null);
@@ -72,6 +74,9 @@ export default function SubMerchantsPage() {
                     </td>
                     <td className='px-4 py-3.5 text-right'>
                       <div className='inline-flex items-center gap-3'>
+                        <button type='button' onClick={() => router.push(`/dashboard/customers?subMerchant=${encodeURIComponent(sm.reference ?? '')}`)} className='inline-flex items-center gap-1 text-[11px] font-medium text-xental-text-primary-500 hover:text-foreground'>
+                          <Users className='w-3.5 h-3.5' /> Customers
+                        </button>
                         <button type='button' onClick={() => setPayoutFor(sm)} className='inline-flex items-center gap-1 text-[11px] font-medium text-action-blue hover:opacity-80'>
                           <Landmark className='w-3.5 h-3.5' /> Payout
                         </button>
