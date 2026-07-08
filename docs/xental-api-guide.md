@@ -1,7 +1,7 @@
 # Xental API — Frontend Developer Guide
 
 Practical guide for building against the Xental API from the frontend. For the exact request/response
-schema of any endpoint, the live OpenAPI doc is the source of truth: `GET {API}/openapi/v1.json`
+schema of any endpoint, the live OpenAPI doc is the source of truth: `GET {API}/swagger/v1/swagger.json`
 (Swagger UI at `{API}/swagger`).
 
 ## Base URLs
@@ -168,7 +168,9 @@ GET/PUT /settings/splits                  (split settlement plan)          (Owne
 GET/POST/DELETE /rules                    (money rules, e.g. Overpaid -> Hold/Notify)  (Owner/Admin)
 GET/POST/PUT/DELETE /team, /team/{id}     (Owner/Admin)      POST /team/accept  (invitee, anonymous)
 GET/POST/DELETE /api-keys, /api-keys/{id}/rotate                (Owner/Admin/Developer)
-GET/POST/DELETE /webhooks, GET /webhooks/deliveries            (Owner/Admin/Developer)
+GET/POST/DELETE /webhook-endpoints, /webhook-endpoints/{id}     (Owner/Admin/Developer)
+GET  /webhook-endpoints/deliveries  ·  POST /webhook-endpoints/deliveries/{id}/replay
+   (note: /webhooks/nomba is the inbound provider receiver — not called from the FE)
 GET  /insights                            -> dashboard metrics
 ```
 
