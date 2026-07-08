@@ -38,6 +38,15 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
   const {data: profile} = useProfile();
 
+  const initials =
+    (profile?.name ?? '')
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0])
+      .join('')
+      .toUpperCase() || 'U';
+
   async function handleLogout() {
     try {
       await postRequest({ url: '/developers/logout', payload: {} });
@@ -111,7 +120,7 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <div className='absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent rounded-2xl' />
         <div className='relative flex items-center gap-2'>
           <div className='w-8 h-8 rounded-full bg-white flex items-center justify-center shrink-0 shadow'>
-            <span className='text-[10px] font-bold text-action-blue leading-none'>PL</span>
+            <span className='text-[10px] font-bold text-action-blue leading-none'>{initials}</span>
           </div>
           <span className='text-white text-sm font-semibold drop-shadow'>{profile?.name?.split(' ')[0]}</span>
         </div>

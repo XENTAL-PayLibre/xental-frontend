@@ -731,6 +731,7 @@ type SplitRow = {
 
 function SplitsTab() {
   const { data: splits = [], isLoading } = useSplits();
+  const { data: banks = [] } = useBanks();
   const save = useSetSplits();
   const [rows, setRows] = useState<SplitRow[]>([]);
 
@@ -799,7 +800,19 @@ function SplitsTab() {
               <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
                 <InputField label='Beneficiary name' value={row.beneficiaryName} onChange={(v) => update(i, { beneficiaryName: v })} />
                 <InputField label='Account number' value={row.accountNumber} onChange={(v) => update(i, { accountNumber: v })} />
-                <InputField label='Bank code' value={row.bankCode} onChange={(v) => update(i, { bankCode: v })} placeholder='000014' />
+                <div>
+                  <label className='block text-xs text-xental-text-primary-400 mb-1'>Bank</label>
+                  <select
+                    value={row.bankCode}
+                    onChange={(e) => update(i, { bankCode: e.target.value })}
+                    className='w-full border border-stroke-2 rounded-lg px-3 py-2 text-sm text-foreground bg-white focus:outline-none focus:ring-2 focus:ring-action-blue/30 focus:border-action-blue'
+                  >
+                    <option value=''>Select a bank…</option>
+                    {banks.map((b) => (
+                      <option key={b.code} value={b.code}>{b.name}</option>
+                    ))}
+                  </select>
+                </div>
                 <SelectField label='Basis' value={row.basis} onChange={(v) => update(i, { basis: v as 'Percentage' | 'Flat' })} options={['Percentage', 'Flat']} />
                 {row.basis === 'Percentage' ? (
                   <InputField label='Share (%)' value={row.percent} onChange={(v) => update(i, { percent: v })} placeholder='e.g. 30' />
