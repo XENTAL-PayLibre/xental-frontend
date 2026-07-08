@@ -22,27 +22,7 @@ const BUCKET_CONFIG = {
   reversals: { label: 'Reversals', icon: RotateCcw, color: 'text-indigo-500', bg: 'bg-indigo-50 border-indigo-200' },
 };
 
-const MOCK_SUMMARY: ReconciliationSummary = {
-  review: 12,
-  unknown: 3,
-  overpaid: 5,
-  underpaid: 2,
-  highRisk: 1,
-  reversals: 0,
-};
 
-// Removed static MOCK_BUCKET_DATA
-
-const MOCK_FAILED_SETTLEMENTS: FailedSettlement[] = [
-  {
-    virtualAccountId: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
-    tenantId: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
-    accountRef: 'acc-101',
-    netKobo: 4900000,
-    failureReason: 'Network timeout during provider sweep process. Service unavailable.',
-    failedAtUtc: new Date().toISOString(),
-  }
-];
 
 export default function ReconciliationView() {
   const router = useRouter();
@@ -51,45 +31,14 @@ export default function ReconciliationView() {
   const [bucketPage, setBucketPage] = useState(1);
   const [failedPage, setFailedPage] = useState(1);
 
-  const { data: rawSummary, isLoading: summaryLoading } = useReconciliationSummary();
-  const { data: rawBucketData, isLoading: bucketLoading } = useReconciliationBucket(activeBucket);
-
-  // Use mock data if API is empty for UI testing
-  const summary = rawSummary || MOCK_SUMMARY;
-
-  const bucketCount = activeBucket
-    ? (summary[activeBucket as keyof ReconciliationSummary] || 0)
-    : Object.values(summary).reduce((acc, curr) => acc + curr, 0);
-
-  const bucketData = rawBucketData || Array.from({ length: bucketCount }).map((_, i) => ({
-    id: `mock-${activeBucket || 'all'}-${i}`,
-    tenantId: 'tenant-456',
-    virtualAccountId: 'va-789',
-    reference: `PAY-${10000 + i}`,
-    amountKobo: 5000000 + i * 150000,
-    netCreditKobo: 4900000 + i * 150000,
-    status: 'Failed',
-    reconciliation: activeBucket ? BUCKET_CONFIG[activeBucket as keyof ReconciliationSummary].label : 'Unknown',
-    reason: 'Amount paid does not match invoice. Requires manual review of ledger balances and external confirmation from provider gateway before progressing.',
-    riskScore: 60 + (i % 35),
-    transferName: 'John Doe',
-    occurredAtUtc: new Date(Date.now() - i * 3600000).toISOString(),
-  }));
+  const { data: summary, isLoading: summaryLoading } = useReconciliationSummary();
+  const { data: bucketData = [], isLoading: bucketLoading } = useReconciliationBucket(activeBucket);
 
   const paginatedBucketData = bucketData.slice((bucketPage - 1) * PAGE_SIZE, bucketPage * PAGE_SIZE);
   const bucketTotalPages = Math.max(1, Math.ceil(bucketData.length / PAGE_SIZE));
 
-  const { data: rawFailedSettlements, isLoading: failedLoading } = useFailedSettlements();
+  const { data: failedSettlements = [], isLoading: failedLoading } = useFailedSettlements();
   const { mutate: retrySettlement, isPending: retrying } = useRetrySettlement();
-
-  const failedSettlements = rawFailedSettlements || Array.from({ length: 15 }).map((_, i) => ({
-    virtualAccountId: `va-${900 + i}-retry`,
-    tenantId: 'tenant-456',
-    accountRef: `customer-${900 + i}`,
-    netKobo: 4900000,
-    failedAtUtc: new Date(Date.now() - 86400000 * i).toISOString(),
-    failureReason: 'Provider gateway timeout during scheduled night-time settlement run.',
-  }));
 
   const paginatedFailedSettlements = failedSettlements.slice((failedPage - 1) * PAGE_SIZE, failedPage * PAGE_SIZE);
   const failedTotalPages = Math.max(1, Math.ceil(failedSettlements.length / PAGE_SIZE));
@@ -107,7 +56,7 @@ export default function ReconciliationView() {
       <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4'>
         {(Object.entries(BUCKET_CONFIG) as [keyof ReconciliationSummary, any][]).map(([key, config]) => {
           const Icon = config.icon;
-          const count = summary[key as keyof ReconciliationSummary] ?? 0;
+          const count = summaryLoading ? null : (summary?.[key as keyof ReconciliationSummary] ?? 0);
 
           const iconElement = (
             <div className={`p-2 rounded-lg inline-flex w-fit bg-xental-bg`}>
@@ -120,7 +69,7 @@ export default function ReconciliationView() {
               key={key}
               icon={iconElement}
               label={config.label}
-              value={String(count)}
+              value={count === null ? '—' : String(count)}
             />
           );
         })}
@@ -195,7 +144,7 @@ export default function ReconciliationView() {
                   </tr>
                 </thead>
                 <tbody>
-                  {bucketLoading && !rawBucketData ? (
+                  {bucketLoading && bucketData.length === 0 ? (
                     Array.from({ length: 5 }).map((_, i) => (
                       <tr key={i} className='border-b border-stroke-2'>
                         <td className='px-4 py-4'><div className='h-4 bg-gray-200 rounded animate-pulse w-24'></div></td>
@@ -263,7 +212,7 @@ export default function ReconciliationView() {
                 </tr>
               </thead>
               <tbody>
-                {failedLoading && !rawFailedSettlements ? (
+                {failedLoading && failedSettlements.length === 0 ? (
                   Array.from({ length: 3 }).map((_, i) => (
                     <tr key={i} className='border-b border-stroke-2'>
                       <td className='px-4 py-4'><div className='h-4 bg-gray-200 rounded animate-pulse w-24'></div></td>

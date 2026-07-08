@@ -22,25 +22,7 @@ export default function ReconciliationDetailView({ id }: { id: string }) {
 
   const { data: bucketData, isLoading } = useReconciliationBucket(bucket);
 
-  // Since we rely on mock data in the main list, we'll recreate the mock data locally 
-  // if the API returns undefined so we can still display a test transaction.
-  const fallbackMockData = Array.from({ length: 50 }).map((_, i) => ({
-    id: `mock-${bucket || 'all'}-${i}`,
-    tenantId: 'tenant-456',
-    virtualAccountId: 'va-789',
-    reference: `PAY-${10000 + i}`,
-    amountKobo: 5000000 + i * 150000,
-    netCreditKobo: 4900000 + i * 150000,
-    status: 'Failed',
-    reconciliation: 'Mismatch',
-    reason: 'Amount paid does not match invoice. Requires manual review of ledger balances and external confirmation from provider gateway before progressing.',
-    riskScore: 60 + (i % 35),
-    transferName: 'John Doe',
-    occurredAtUtc: new Date(Date.now() - i * 3600000).toISOString(),
-  }));
-
-  const dataToSearch = bucketData || fallbackMockData;
-  const tx = dataToSearch.find((t) => t.id === id);
+  const tx = bucketData?.find((t) => t.id === id);
 
   if (isLoading) {
     return (

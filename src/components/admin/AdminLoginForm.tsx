@@ -39,7 +39,7 @@ const AdminLoginForm = () => {
   const onSubmit = (values: z.infer<typeof AdminLoginSchema>) => {
     login(values, {
       onSuccess: () => {
-        router.push('/admin/reconciliation');
+        router.push('/admin/onboarding');
       }
     });
   };
