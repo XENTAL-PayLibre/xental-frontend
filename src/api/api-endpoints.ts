@@ -71,6 +71,7 @@ export const API_ENDPOINTS = {
   },
   TRANSFERS: {
     BASE: '/transfers',
+    BANKS: '/transfers/banks',
     LOOKUP: '/transfers/bank/lookup',
     SEND: '/transfers/bank',
     ONE: (merchantTxRef: string) => `/transfers/${merchantTxRef}`,

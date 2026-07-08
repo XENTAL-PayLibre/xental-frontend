@@ -5,7 +5,15 @@ import { toast } from 'sonner';
 import { getRequest, postRequest } from '@/lib/http';
 import { displayError } from './auth';
 import { API_ENDPOINTS } from './api-endpoints';
-import type { BankLookupResponse, TransferResponse } from './types/dashboard';
+import type { BankLookupResponse, TransferResponse, BankResponse } from './types/dashboard';
+
+export function useBanks() {
+  return useQuery({
+    queryKey: ['banks'],
+    queryFn: () => getRequest<BankResponse[]>({ url: API_ENDPOINTS.TRANSFERS.BANKS }),
+    staleTime: 24 * 60 * 60 * 1000,
+  });
+}
 
 export function useTransfers(take = 50) {
   return useQuery({
