@@ -37,6 +37,9 @@ export function useAdminLogin() {
     onSuccess: (data) => {
       if (data.accessToken) {
         setToken(COOKIE_KEYS.admin_token, data.accessToken, data.expiresIn);
+        if (data.role) {
+          setToken(COOKIE_KEYS.admin_role, data.role, data.expiresIn);
+        }
         toast.success('Login successful');
       }
     },
