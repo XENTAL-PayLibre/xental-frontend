@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, KeyRound, Wallet, Radio, GitBranch, Sparkles, Webhook } from 'lucide-react';
+import { ArrowRight, KeyRound, Repeat, Wallet, Radio, GitBranch, Sparkles, Webhook } from 'lucide-react';
 import { Prose } from '@/components/docs/Prose';
 import { DOCS_API_BASE, DOCS_SANDBOX_BASE } from '@/lib/docs/openapi';
 
@@ -12,6 +12,7 @@ export const metadata: Metadata = {
 const CARDS = [
   { icon: KeyRound, title: 'Authentication', href: '/documentation/authentication', desc: 'Create a key, exchange it for a bearer token, and call the API.' },
   { icon: Wallet, title: 'Virtual Accounts', href: '/documentation/api-reference/virtual-accounts', desc: 'Provision persistent NUBANs and reconcile inflows automatically.' },
+  { icon: Repeat, title: 'Recurring Billing', href: '/documentation/api-reference/billing', desc: 'Per-cycle billing on a reusable account, with automatic attribution.' },
   { icon: Webhook, title: 'Webhook Endpoints', href: '/documentation/api-reference/webhook-endpoints', desc: 'Receive signed, enriched, pre-reconciled events.' },
   { icon: Radio, title: 'Live Checkout', href: '/documentation/api-reference/checkout', desc: 'Real-time “Payment received” over a Server-Sent Events stream.' },
   { icon: GitBranch, title: 'Split & Escrow', href: '/documentation/api-reference/split-settlement', desc: 'Fan settlements across beneficiaries; hold funds in escrow.' },

@@ -42,13 +42,13 @@ export const LoginSchema = z.object({
 });
 
 export const CreateCustomerSchema = z.object({
-  accountRef: z.string().min(1, { message: 'Account Reference is required' }),
   name: z.string().min(1, { message: 'Full Name is required' }),
   email: z.string().min(1, { message: 'Email is required' }).email({ message: 'Invalid email address' }),
   phone: z.string()
     .min(1, { message: 'Phone number is required' })
     .regex(/^[\d+\-()\s]*$/, { message: 'Phone number must contain only numbers and standard formatting characters (+, -, space, parentheses)' }),
-  expectedAmountKobo: z.number().optional().nullable(),
+  // Naira; converted to kobo before sending to the API.
+  expectedAmount: z.number().optional().nullable(),
   expiryDateUtc: z.string().optional().nullable(),
   subMerchantRef: z.string().optional().nullable(),
 });

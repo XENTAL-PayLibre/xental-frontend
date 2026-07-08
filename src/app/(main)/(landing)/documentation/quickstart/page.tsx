@@ -69,6 +69,7 @@ export default function QuickstartPage() {
       <h2>Next steps</h2>
       <ul>
         <li><a href='/documentation/authentication'>Authentication</a> — keys, tokens, and the two auth planes.</li>
+        <li><a href='/documentation/api-reference/billing'>Recurring Billing</a> — bill a customer on a cycle from a reusable account.</li>
         <li><a href='/documentation/api-reference/split-settlement'>Split & Escrow</a> — fan settlements across beneficiaries.</li>
         <li><a href='/documentation/api-reference/money-rules'>Money Rules</a> — automate holds and notifications.</li>
       </ul>

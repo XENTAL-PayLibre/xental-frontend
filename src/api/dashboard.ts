@@ -10,6 +10,7 @@ import type {
   ApiKeyResponse,
   DeveloperProfileResponse,
   WebhookEndpointResponse,
+  WebhookEndpointCreatedResponse,
   SimulatedDepositResponse,
   TransactionSummaryResponse,
 } from './types/dashboard';
@@ -124,7 +125,7 @@ export function useCreateWebhook() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (url: string) =>
-      postRequest<WebhookEndpointResponse, { url: string }>({
+      postRequest<WebhookEndpointCreatedResponse, { url: string }>({
         url: '/webhook-endpoints',
         payload: { url },
       }),

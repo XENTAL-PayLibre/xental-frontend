@@ -56,6 +56,9 @@ export type VirtualAccountResponse = {
   accountNumber: string | null;
   bankName: string | null;
   accountName: string | null;
+  customerName: string | null;
+  customerEmail: string | null;
+  customerPhone: string | null;
   expectedAmountKobo: number | null;
   amountPaidKobo: number;
   deficitKobo: number;
@@ -82,6 +85,13 @@ export type WebhookEndpointResponse = {
   url: string | null;
   active: boolean;
   createdAtUtc: string;
+};
+
+/** Returned only from POST /webhook-endpoints — the signing secret is shown once. */
+export type WebhookEndpointCreatedResponse = {
+  id: string;
+  url: string;
+  signingSecret: string;
 };
 
 export type SimulatedDepositResponse = {

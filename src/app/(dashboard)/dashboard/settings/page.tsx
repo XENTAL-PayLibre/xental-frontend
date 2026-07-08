@@ -21,16 +21,20 @@ import {
   useCreateWebhook,
   useDeleteWebhook,
 } from '@/api/dashboard';
+import {
+  useTeam,
+  useInviteTeamMember,
+  useUpdateTeamMember,
+  useRemoveTeamMember,
+  useResendInvite,
+  type TeamMember,
+  type TeamRole,
+} from '@/api/team';
 
 type Tab = 'Profile' | 'Team' | 'Developers' | 'Security';
 const TABS: Tab[] = ['Profile', 'Team', 'Developers', 'Security'];
 
-const TEAM_MEMBERS = [
-  { id: '1', name: 'Tunde Adebayo', email: 'tundeadebayo@gmail.com', role: 'Admin', dateAdded: '2026-02-23' },
-  { id: '2', name: 'Tunde Adebayo', email: 'tundeadebayo@gmail.com', role: 'Employee', dateAdded: '2026-02-23' },
-  { id: '3', name: 'Tunde Adebayo', email: 'tundeadebayo@gmail.com', role: 'Developer', dateAdded: '2026-02-23' },
-];
-const ROLES = ['Admin', 'Employee', 'Developer'];
+const ROLES: TeamRole[] = ['Admin', 'Employee', 'Developer'];
 
 function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void }) {
   return (
@@ -122,35 +126,55 @@ function ProfileTab() {
 }
 
 function TeamTab() {
-  const [editing, setEditing] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ name: '', email: '', role: '' });
+  const { data: members = [], isLoading } = useTeam();
+  const invite = useInviteTeamMember();
+  const update = useUpdateTeamMember();
+  const remove = useRemoveTeamMember();
+  const resend = useResendInvite();
 
-  function startEdit(m: typeof TEAM_MEMBERS[0]) {
-    setEditing(m.id);
-    setEditForm({ name: m.name, email: m.email, role: m.role });
+  // 'list' | 'add' | { editId } — the add/edit form reuses one shape.
+  const [mode, setMode] = useState<'list' | 'add' | { editId: string }>('list');
+  const [form, setForm] = useState<{ name: string; email: string; role: TeamRole }>({ name: '', email: '', role: 'Employee' });
+
+  const busy = invite.isPending || update.isPending || remove.isPending;
+
+  function startAdd() { setForm({ name: '', email: '', role: 'Employee' }); setMode('add'); }
+  function startEdit(m: TeamMember) { setForm({ name: m.name, email: m.email, role: m.role }); setMode({ editId: m.id }); }
+
+  function handleSubmit() {
+    if (mode === 'add') {
+      invite.mutate(form, { onSuccess: () => setMode('list') });
+    } else if (typeof mode === 'object') {
+      update.mutate({ id: mode.editId, input: form }, { onSuccess: () => setMode('list') });
+    }
   }
 
-  function handleSave() {
-    setEditing(null);
-    toast.success('Team member updated');
+  function handleDelete(id: string) {
+    remove.mutate(id, { onSuccess: () => setMode('list') });
   }
 
-  if (editing) {
+  if (mode === 'add' || typeof mode === 'object') {
+    const editId = typeof mode === 'object' ? mode.editId : null;
     return (
       <div>
         <div className='flex items-center justify-between mb-6'>
-          <h3 className='text-sm font-semibold text-foreground'>Basic information</h3>
+          <h3 className='text-sm font-semibold text-foreground'>{editId ? 'Edit team member' : 'Add team member'}</h3>
           <div className='flex items-center gap-2'>
-            <Button size='sm' variant='outline' className='text-destructive border-destructive hover:bg-red-50' onClick={() => { setEditing(null); toast.success('Member removed'); }}>
-              <Trash2 className='w-3.5 h-3.5 mr-1.5' /> Delete
+            {editId && (
+              <Button size='sm' variant='outline' className='text-destructive border-destructive hover:bg-red-50' disabled={busy} onClick={() => handleDelete(editId)}>
+                <Trash2 className='w-3.5 h-3.5 mr-1.5' /> {remove.isPending ? 'Removing…' : 'Delete'}
+              </Button>
+            )}
+            <Button size='sm' variant='outline' disabled={busy} onClick={() => setMode('list')}>Cancel</Button>
+            <Button size='sm' disabled={busy || !form.name.trim() || !form.email.trim()} onClick={handleSubmit}>
+              {editId ? (update.isPending ? 'Saving…' : 'Save changes') : (invite.isPending ? 'Sending…' : 'Send invite')}
             </Button>
-            <Button size='sm' onClick={handleSave}>Save changes</Button>
           </div>
         </div>
         <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
-          <InputField label='Full name' value={editForm.name} onChange={(v) => setEditForm((f) => ({ ...f, name: v }))} />
-          <InputField label='Email' value={editForm.email} onChange={(v) => setEditForm((f) => ({ ...f, email: v }))} />
-          <SelectField label='Role' value={editForm.role} onChange={(v) => setEditForm((f) => ({ ...f, role: v }))} options={ROLES} />
+          <InputField label='Full name' value={form.name} onChange={(v) => setForm((f) => ({ ...f, name: v }))} />
+          <InputField label='Email' value={form.email} onChange={(v) => setForm((f) => ({ ...f, email: v }))} disabled={!!editId} />
+          <SelectField label='Role' value={form.role} onChange={(v) => setForm((f) => ({ ...f, role: v as TeamRole }))} options={ROLES} />
         </div>
       </div>
     );
@@ -160,7 +184,7 @@ function TeamTab() {
     <div>
       <div className='flex items-center justify-between mb-4'>
         <h3 className='text-sm font-semibold text-foreground'>Team members</h3>
-        <Button size='sm' onClick={() => toast.info('Add team member — coming once API is wired')}>
+        <Button size='sm' onClick={startAdd}>
           <Plus className='w-3.5 h-3.5 mr-1.5' /> Add team member
         </Button>
       </div>
@@ -170,23 +194,34 @@ function TeamTab() {
             <tr className='border-b border-stroke-2 bg-xental-bg'>
               <th className='text-left px-4 py-3 font-medium text-xental-text-primary-400'>Name</th>
               <th className='text-left px-4 py-3 font-medium text-xental-text-primary-400'>Role</th>
+              <th className='text-left px-4 py-3 font-medium text-xental-text-primary-400'>Status</th>
               <th className='text-left px-4 py-3 font-medium text-xental-text-primary-400'>Date Added</th>
               <th className='px-4 py-3' />
             </tr>
           </thead>
           <tbody>
-            {TEAM_MEMBERS.map((m) => (
+            {isLoading ? (
+              <tr><td colSpan={5} className='px-4 py-6 text-center text-xental-text-primary-400'>Loading…</td></tr>
+            ) : members.length === 0 ? (
+              <tr><td colSpan={5} className='px-4 py-6 text-center text-xental-text-primary-400'>No team members yet. Invite one to get started.</td></tr>
+            ) : members.map((m) => (
               <tr key={m.id} className='border-b border-stroke-2 last:border-0 bg-white'>
                 <td className='px-4 py-3'>
                   <p className='font-medium text-foreground'>{m.name}</p>
                   <p className='text-xental-text-primary-400'>{m.email}</p>
                 </td>
                 <td className='px-4 py-3 text-xental-text-primary-500'>{m.role}</td>
-                <td className='px-4 py-3 text-xental-text-primary-500'>{m.dateAdded}</td>
                 <td className='px-4 py-3'>
-                  <div className='flex items-center gap-2 justify-end'>
-                    <button onClick={() => startEdit(m)}><Pencil className='w-3.5 h-3.5 text-xental-text-primary-400 hover:text-action-blue' /></button>
-                    <button><MoreVertical className='w-3.5 h-3.5 text-xental-text-primary-400' /></button>
+                  <span className='text-xental-text-primary-500'>{m.status}</span>
+                  {m.status === 'Invited' && (
+                    <button className='ml-2 text-action-blue hover:underline' disabled={resend.isPending} onClick={() => resend.mutate(m.id)}>Resend</button>
+                  )}
+                </td>
+                <td className='px-4 py-3 text-xental-text-primary-500'>{new Date(m.createdAtUtc).toLocaleDateString()}</td>
+                <td className='px-4 py-3'>
+                  <div className='flex items-center gap-3 justify-end'>
+                    <button title='Edit' onClick={() => startEdit(m)}><Pencil className='w-3.5 h-3.5 text-xental-text-primary-400 hover:text-action-blue' /></button>
+                    <button title='Remove' disabled={busy} onClick={() => handleDelete(m.id)}><Trash2 className='w-3.5 h-3.5 text-xental-text-primary-400 hover:text-destructive' /></button>
                   </div>
                 </td>
               </tr>
@@ -200,6 +235,8 @@ function TeamTab() {
 
 function DevelopersTab() {
   const [newKeyLabel, setNewKeyLabel] = useState('');
+  const [newKeyMode, setNewKeyMode] = useState<'test' | 'live'>('test');
+  const [newWebhookSecret, setNewWebhookSecret] = useState<string | null>(null);
   const [visibleSecrets, setVisibleSecrets] = useState<Record<string, boolean>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [webhookUrl, setWebhookUrl] = useState('');
@@ -222,7 +259,7 @@ function DevelopersTab() {
   async function handleCreateKey() {
     if (!newKeyLabel.trim()) { toast.error('Enter a label for the key'); return; }
     try {
-      const res = await createKey.mutateAsync({ label: newKeyLabel.trim(), mode: 'live' });
+      const res = await createKey.mutateAsync({ label: newKeyLabel.trim(), mode: newKeyMode });
       const secret = (res as { clientSecret?: string })?.clientSecret;
       if (secret) toast.success(`Key created — secret: ${secret} (shown once, copy now)`, { duration: 10000 });
       else toast.success('API key created');
@@ -247,8 +284,10 @@ function DevelopersTab() {
   async function handleSaveWebhook() {
     if (!webhookUrl.trim()) { toast.error('Enter a webhook URL'); return; }
     try {
-      await createWebhook.mutateAsync(webhookUrl.trim());
-      toast.success('Webhook endpoint added');
+      const res = await createWebhook.mutateAsync(webhookUrl.trim());
+      // The signing secret is returned once, at creation — surface it so it can be copied.
+      setNewWebhookSecret(res.signingSecret);
+      toast.success('Webhook added — copy your signing secret now (shown once)');
       setWebhookUrl('');
     } catch (err) { toast.error(apiError(err, 'Failed to save webhook')); }
   }
@@ -303,6 +342,15 @@ function DevelopersTab() {
             placeholder='Key label (e.g. Production)'
             className='border border-stroke-2 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-action-blue/30 focus:border-action-blue flex-1'
           />
+          <select
+            value={newKeyMode}
+            onChange={(e) => setNewKeyMode(e.target.value as 'test' | 'live')}
+            title='Live keys require an approved KYC/KYB onboarding'
+            className='border border-stroke-2 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-action-blue/30 focus:border-action-blue'
+          >
+            <option value='test'>Test</option>
+            <option value='live'>Live</option>
+          </select>
           <Button size='sm' onClick={handleCreateKey} disabled={createKey.isPending}>
             <Plus className='w-3.5 h-3.5 mr-1.5' /> {createKey.isPending ? 'Creating...' : 'Create'}
           </Button>
@@ -345,6 +393,19 @@ function DevelopersTab() {
             <Plus className='w-3.5 h-3.5 mr-1.5' /> {createWebhook.isPending ? 'Saving...' : 'Add'}
           </Button>
         </div>
+        {newWebhookSecret && (
+          <div className='mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3'>
+            <p className='text-xs font-semibold text-amber-800'>Signing secret — copy it now, it won&apos;t be shown again</p>
+            <p className='text-[11px] text-amber-700 mt-0.5'>Use it to verify the HMAC-SHA256 signature on every delivery to this endpoint.</p>
+            <div className='mt-2 flex items-center gap-2'>
+              <code className='flex-1 truncate rounded border border-amber-200 bg-white px-2 py-1 text-[11px] font-mono text-foreground'>{newWebhookSecret}</code>
+              <button onClick={() => handleCopy('new-webhook-secret', newWebhookSecret)} className='inline-flex items-center gap-1 text-xs text-action-blue hover:underline'>
+                <Copy className='w-3.5 h-3.5' /> {copiedId === 'new-webhook-secret' ? 'Copied' : 'Copy'}
+              </button>
+              <button onClick={() => setNewWebhookSecret(null)} className='text-xs text-xental-text-primary-400 hover:text-foreground'>Dismiss</button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

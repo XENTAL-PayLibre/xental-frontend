@@ -1,5 +1,6 @@
 export type CreateVirtualAccountPayload = {
-  accountRef: string;
+  /** Optional — the server generates a unique customer reference when omitted. */
+  accountRef?: string;
   name: string;
   email?: string;
   phone?: string;
