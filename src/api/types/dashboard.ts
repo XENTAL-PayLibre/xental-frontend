@@ -53,6 +53,15 @@ export type CustomerScoreResponse = {
   rating: string;
 };
 
+export type CopilotAction = { label: string; href: string };
+export type CopilotAnswer = {
+  intent: string;
+  reply: string;
+  suggestions: string[];
+  actions: CopilotAction[];
+  data?: unknown;
+};
+
 export type TransactionSummaryResponse = {
   total: number;
   totalPayinsKobo: number;
