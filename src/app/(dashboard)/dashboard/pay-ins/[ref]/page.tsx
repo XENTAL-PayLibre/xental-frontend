@@ -53,9 +53,6 @@ export default function PayInDetailPage({ params }: { params: Promise<{ ref: str
             <h1 className='text-xl font-bold text-foreground font-mono'>{ref}</h1>
           </div>
         </div>
-        <Button size='sm' variant='outline' className='gap-1.5'>
-          <Download className='w-3.5 h-3.5' /> Export
-        </Button>
       </div>
 
       <div className='grid grid-cols-2 gap-4'>
@@ -100,9 +97,6 @@ export default function PayInDetailPage({ params }: { params: Promise<{ ref: str
             <ArrowLeft className='w-3.5 h-3.5 mr-1.5' /> Back
           </Button>
         </Link>
-        <Button size='sm' className='gap-1.5'>
-          <Download className='w-3.5 h-3.5' /> Export
-        </Button>
       </div>
     </div>
   );

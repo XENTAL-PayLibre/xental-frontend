@@ -64,14 +64,6 @@ export function CustomersView() {
         <div className='flex flex-wrap items-center gap-2'>
           <Button
             size='sm'
-            variant='outline'
-            className='gap-1.5'
-            onClick={() => toast.info('Export coming soon')}
-          >
-            <Download className='w-3.5 h-3.5' /> Export
-          </Button>
-          <Button
-            size='sm'
             className='gap-1.5'
             onClick={() => setIsAddModalOpen(true)}
           >
