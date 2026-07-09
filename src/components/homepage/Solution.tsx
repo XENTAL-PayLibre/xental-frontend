@@ -48,6 +48,27 @@ const solutions = [
     description:
       'Automatically manage underpayments, and duplicate transactions.',
   },
+  {
+    id: 7,
+    icon: '/images/landing/reconcile.svg',
+    title: 'Programmable Payment Flows',
+    description:
+      'Automate holds, releases, alerts and reviews the moment a payment reconciles — no code required.',
+  },
+  {
+    id: 8,
+    icon: '/images/landing/customers.svg',
+    title: 'Collections Intelligence',
+    description:
+      'Receivables aging, cash-flow forecasting, and a reliability score for every customer.',
+  },
+  {
+    id: 9,
+    icon: '/images/landing/notification.svg',
+    title: 'AI Copilot & MCP',
+    description:
+      'Ask about your account in plain English, or let any AI agent operate it through our MCP server.',
+  },
 ];
 
 const containerVariants = {

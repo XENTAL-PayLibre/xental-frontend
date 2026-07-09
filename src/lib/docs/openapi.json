@@ -1469,6 +1469,55 @@
         }
       }
     },
+    "/api/v1/copilot/ask": {
+      "post": {
+        "tags": [
+          "Copilot"
+        ],
+        "summary": "Ask the Copilot a question about your account.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopilotAskRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopilotAskRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopilotAskRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CopilotAnswer"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CopilotAnswer"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CopilotAnswer"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/developers/register": {
       "post": {
         "tags": [
@@ -1963,6 +2012,458 @@
         }
       }
     },
+    "/api/v1/developers/change-password": {
+      "post": {
+        "tags": [
+          "Developers"
+        ],
+        "summary": "Change the signed-in account's password (requires the current password).",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Password updated."
+          },
+          "400": {
+            "description": "Current password wrong, or new password too weak.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/flows": {
+      "get": {
+        "tags": [
+          "Flows"
+        ],
+        "summary": "List the tenant's flows (with their ordered actions).",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FlowResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FlowResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FlowResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Flows"
+        ],
+        "summary": "Create a flow.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFlowRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFlowRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFlowRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlowResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlowResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlowResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/flows/runs": {
+      "get": {
+        "tags": [
+          "Flows"
+        ],
+        "summary": "The most recent flow-run audit entries.",
+        "parameters": [
+          {
+            "name": "take",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FlowRunResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FlowRunResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FlowRunResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/flows/{id}": {
+      "get": {
+        "tags": [
+          "Flows"
+        ],
+        "summary": "Get a single flow by id.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlowResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlowResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlowResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Flows"
+        ],
+        "summary": "Replace a flow's configuration.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFlowRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFlowRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFlowRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlowResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlowResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlowResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Flows"
+        ],
+        "summary": "Delete a flow.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/flows/{id}/enabled": {
+      "post": {
+        "tags": [
+          "Flows"
+        ],
+        "summary": "Enable or disable a flow.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetFlowEnabledRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetFlowEnabledRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetFlowEnabledRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/Health": {
       "get": {
         "tags": [
@@ -1999,6 +2500,127 @@
               "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/InsightsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/insights/aging": {
+      "get": {
+        "tags": [
+          "Insights"
+        ],
+        "summary": "Outstanding receivables bucketed by how long they've been outstanding.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgingReportResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgingReportResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgingReportResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/insights/forecast": {
+      "get": {
+        "tags": [
+          "Insights"
+        ],
+        "summary": "Cash-flow forecast: scheduled billing due (weekly) + a run-rate projection.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 30
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashFlowForecastResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashFlowForecastResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashFlowForecastResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/insights/customers": {
+      "get": {
+        "tags": [
+          "Insights"
+        ],
+        "summary": "Per-customer collection reliability, worst (most outstanding) first.",
+        "parameters": [
+          {
+            "name": "take",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CustomerScoreResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CustomerScoreResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CustomerScoreResponse"
+                  }
                 }
               }
             }
@@ -3468,6 +4090,54 @@
         }
       }
     },
+    "/api/v1/transactions/summary": {
+      "get": {
+        "tags": [
+          "Transactions"
+        ],
+        "summary": "Pay-ins summary (total / successful / failed) for the dashboard cards, optionally scoped\n            to a date range. Usable from the dashboard or an API key.",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionSummaryResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionSummaryResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionSummaryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/transactions/{reference}": {
       "get": {
         "tags": [
@@ -3697,6 +4367,45 @@
         }
       }
     },
+    "/api/v1/transfers/banks": {
+      "get": {
+        "tags": [
+          "Transfers"
+        ],
+        "summary": "List selectable banks (name + code) for payout/settlement UIs. Pulls the provider's live\n            list (cached), falling back to a built-in Nigerian bank list if the provider is unavailable.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BankResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BankResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BankResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/transfers/bank/lookup": {
       "post": {
         "tags": [
@@ -3915,7 +4624,7 @@
         "tags": [
           "VirtualAccounts"
         ],
-        "summary": "Provision a persistent NUBAN for a customer. Callable from an API key or the dashboard\n            (Owner/Admin/Developer). Mode is the API key's key_mode, or — on the dashboard — the\n            `X-Xental-Mode` header (default test; live requires approved onboarding).",
+        "summary": "Provision a persistent NUBAN for a customer.\n            \nFrom an <b>API key</b> the mode follows the key's `key_mode` — a test key mints a\n            sandbox NUBAN, a live key a real one. From the <b>dashboard</b> provisioning is always live and\n            requires approved onboarding; test customers and virtual accounts are created via a test API key.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -3957,7 +4666,7 @@
             }
           },
           "403": {
-            "description": "Live requested from the dashboard without approved onboarding.",
+            "description": "Provisioning from the dashboard without approved onboarding.",
             "content": {
               "text/plain": {
                 "schema": {
@@ -4038,6 +4747,67 @@
           },
           "404": {
             "description": "No virtual account for this accountRef.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "VirtualAccounts"
+        ],
+        "summary": "Delete a customer's virtual account (and the customer if it has no other accounts).\n            Only accounts with no payment activity can be deleted.",
+        "parameters": [
+          {
+            "name": "accountRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted."
+          },
+          "404": {
+            "description": "No virtual account for this accountRef.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The account has payment activity and cannot be deleted.",
             "content": {
               "text/plain": {
                 "schema": {
@@ -4545,6 +5315,41 @@
         },
         "additionalProperties": false
       },
+      "AgingBucketResponse": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "nullable": true
+          },
+          "accounts": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "outstandingKobo": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AgingReportResponse": {
+        "type": "object",
+        "properties": {
+          "totalOutstandingKobo": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "buckets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgingBucketResponse"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "ApiKeyResponse": {
         "type": "object",
         "properties": {
@@ -4616,6 +5421,21 @@
           }
         },
         "additionalProperties": false
+      },
+      "BankResponse": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "code": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "A selectable bank for payout/settlement UIs (name shown, code sent behind the scenes)."
       },
       "BillingPeriodResponse": {
         "type": "object",
@@ -4719,6 +5539,54 @@
         },
         "additionalProperties": false
       },
+      "CashFlowForecastResponse": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "scheduledDueKobo": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "dailyRunRateKobo": {
+            "type": "number",
+            "format": "double"
+          },
+          "runRateProjectedKobo": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "projectedTotalKobo": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "weeks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ForecastWeekResponse"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ChangePasswordRequest": {
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": "string",
+            "nullable": true
+          },
+          "newPassword": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Change the signed-in account's password (requires the current password)."
+      },
       "CheckoutSessionResponse": {
         "type": "object",
         "properties": {
@@ -4778,6 +5646,61 @@
           "expectedAmountKobo": {
             "type": "integer",
             "format": "int64",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CopilotAction": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "nullable": true
+          },
+          "href": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CopilotAnswer": {
+        "type": "object",
+        "properties": {
+          "intent": {
+            "type": "string",
+            "nullable": true
+          },
+          "reply": {
+            "type": "string",
+            "nullable": true
+          },
+          "suggestions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CopilotAction"
+            },
+            "nullable": true
+          },
+          "data": {
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CopilotAskRequest": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
             "nullable": true
           }
         },
@@ -4857,6 +5780,41 @@
             "type": "integer",
             "format": "int32",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateFlowRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "trigger": {
+            "type": "string",
+            "nullable": true
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "minAmountKobo": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "minRiskScore": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "priority": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -4975,6 +5933,56 @@
         },
         "additionalProperties": false
       },
+      "CustomerScoreResponse": {
+        "type": "object",
+        "properties": {
+          "customerRef": {
+            "type": "string",
+            "nullable": true
+          },
+          "customerName": {
+            "type": "string",
+            "nullable": true
+          },
+          "expectedKobo": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "paidKobo": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "outstandingKobo": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "collectionRatePct": {
+            "type": "number",
+            "format": "double"
+          },
+          "deposits": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "duePeriods": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "latePeriods": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "score": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rating": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "DeveloperProfileResponse": {
         "type": "object",
         "properties": {
@@ -5076,6 +6084,104 @@
             "type": "string",
             "format": "date-time",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "FlowResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "trigger": {
+            "type": "string",
+            "nullable": true
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "minAmountKobo": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "minRiskScore": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "priority": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "FlowRunResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "flowId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "flowName": {
+            "type": "string",
+            "nullable": true
+          },
+          "trigger": {
+            "type": "string",
+            "nullable": true
+          },
+          "accountRef": {
+            "type": "string",
+            "nullable": true
+          },
+          "transactionRef": {
+            "type": "string",
+            "nullable": true
+          },
+          "outcome": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ForecastWeekResponse": {
+        "type": "object",
+        "properties": {
+          "weekStartUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "scheduledKobo": {
+            "type": "integer",
+            "format": "int64"
           }
         },
         "additionalProperties": false
@@ -5538,6 +6644,15 @@
         },
         "additionalProperties": false,
         "description": "Set the public brand/product name payers see (checkout, payment instructions)."
+      },
+      "SetFlowEnabledRequest": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
       },
       "SetNextAmountRequest": {
         "type": "object",
@@ -6079,6 +7194,41 @@
         "type": "integer",
         "format": "int32"
       },
+      "TransactionSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPayinsKobo": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "successful": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "failed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pendingReview": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "successfulKobo": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "netCreditedKobo": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Pay-ins summary for the dashboard cards."
+      },
       "TransferResponse": {
         "type": "object",
         "properties": {
@@ -6205,6 +7355,18 @@
             "nullable": true
           },
           "accountName": {
+            "type": "string",
+            "nullable": true
+          },
+          "customerName": {
+            "type": "string",
+            "nullable": true
+          },
+          "customerEmail": {
+            "type": "string",
+            "nullable": true
+          },
+          "customerPhone": {
             "type": "string",
             "nullable": true
           },
@@ -6399,8 +7561,16 @@
       "description": "Live Checkout (differentiator). An integrator (API plane) mints a session token scoped to one\nvirtual account, then hands the payer the snapshot/stream URLs. The snapshot + SSE stream are\n<b>anonymous</b> — a payer watches \"Payment received ✓\" land without an account — and expose\nonly payment state, never PII. Strictly read-only against the money path."
     },
     {
+      "name": "Copilot",
+      "description": "In-dashboard Copilot (agent plane, differentiator): natural-language questions about the\nmerchant's own account, answered from live data (insights, aging, forecast, customer scores,\nflows). Grounded and tenant-scoped — it never invents figures. Dashboard plane."
+    },
+    {
       "name": "Developers",
       "description": "Developer account lifecycle (the dashboard plane): registration, email verification,\nlogin (verified accounts only), session refresh, logout, password reset, and profile.\nSessions are cookie-based: login sets HttpOnly+Secure `xnt_access` (short-lived)\nand `xnt_refresh` (rotating) cookies — tokens are never returned in the body.\nSensitive endpoints are rate-limited."
+    },
+    {
+      "name": "Flows",
+      "description": "Programmable Payment Flows (dashboard plane, differentiator): multi-step automation on reconciled\ndeposits — trigger + conditions → an ordered list of actions (hold, release, notify, review-flag).\nThe Xental.Application.Payments.FlowEngine runs them post-commit, so a flow can never change the payment verdict.\nEvery run is recorded (see `/flows/runs`). Configuration only — nothing here moves money."
     },
     {
       "name": "Health"
