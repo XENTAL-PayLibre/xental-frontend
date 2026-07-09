@@ -80,6 +80,12 @@ export const API_ENDPOINTS = {
     BASE: '/rules',
     ONE: (id: string) => `/rules/${id}`,
   },
+  FLOWS: {
+    BASE: '/flows',
+    RUNS: '/flows/runs',
+    ONE: (id: string) => `/flows/${id}`,
+    ENABLED: (id: string) => `/flows/${id}/enabled`,
+  },
   SUB_MERCHANTS: {
     BASE: '/sub-merchants',
     PAYOUT: (id: string) => `/sub-merchants/${id}/payout`,
