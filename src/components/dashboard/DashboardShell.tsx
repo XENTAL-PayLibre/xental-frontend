@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Menu } from 'lucide-react';
 import Sidebar from './Sidebar';
 import OnboardingBanner from './OnboardingBanner';
+import CopilotWidget from './CopilotWidget';
 
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -44,6 +45,8 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           {children}
         </main>
       </div>
+
+      <CopilotWidget />
     </div>
   );
 }
