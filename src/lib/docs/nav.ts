@@ -19,7 +19,7 @@ export const API_TAGS: TagMeta[] = [
   // Reconciliation & webhooks
   { tag: 'Webhooks', slug: 'webhooks', title: 'Inbound Webhooks', group: 'Reconciliation', summary: 'The Nomba receiver that drives reconciliation.' },
   { tag: 'WebhookEndpoints', slug: 'webhook-endpoints', title: 'Webhook Endpoints', group: 'Reconciliation', summary: 'Register endpoints to receive signed, enriched events.' },
-  { tag: 'Insights', slug: 'insights', title: 'Insights', group: 'Reconciliation', summary: 'Collection rate, deficit, reconciliation & risk breakdown.' },
+  { tag: 'Insights', slug: 'insights', title: 'Insights', group: 'Reconciliation', summary: 'Collection rate & risk breakdown, plus Collections Intelligence: receivables aging, a cash-flow forecast, and per-customer collection scores.' },
 
   // Settlement
   { tag: 'Settings', slug: 'settlement-settings', title: 'Settlement Settings', group: 'Settlement', summary: 'Your settlement bank account and auto-settle threshold.' },
@@ -29,14 +29,21 @@ export const API_TAGS: TagMeta[] = [
   // Real-time & automation
   { tag: 'Checkout', slug: 'checkout', title: 'Live Checkout', group: 'Real-time & automation', summary: 'Real-time “Payment received” via a session token + SSE stream.' },
   { tag: 'Rules', slug: 'money-rules', title: 'Money Rules', group: 'Real-time & automation', summary: 'Declarative if-this-then-that on reconciled deposits.' },
+  { tag: 'Flows', slug: 'payment-flows', title: 'Payment Flows', group: 'Real-time & automation', summary: 'Multi-step automation on reconciled deposits: a trigger + conditions run an ordered list of actions (hold / release / notify / flag), with an audit trail.' },
   { tag: 'Sandbox', slug: 'sandbox', title: 'Sandbox Simulator', group: 'Real-time & automation', summary: 'Drive a real reconciliation with zero money (test-mode).' },
 
   // Auth (integration only): exchange a key you already have for a bearer token.
   { tag: 'Auth', slug: 'tokens', title: 'API Tokens', group: 'Authentication', summary: 'Exchange your API key for a bearer token.' },
 
-  // Platform
-  { tag: 'AgentDiscovery', slug: 'agent-discovery', title: 'Agent Discovery', group: 'Platform', summary: 'Machine-readable capability map for AI agents.' },
+  // AI & agents
+  { tag: 'Copilot', slug: 'copilot', title: 'Copilot', group: 'AI & agents', summary: 'A grounded, natural-language assistant that answers questions about your account from live data.' },
+  { tag: 'AgentDiscovery', slug: 'agent-discovery', title: 'Agent Discovery', group: 'AI & agents', summary: 'Machine-readable capability map (llms.txt) for AI agents.' },
 ];
+
+/** Static guide pages that live alongside the API reference, merged into a group in the sidebar. */
+const GUIDE_EXTRAS: Record<string, NavItem[]> = {
+  'AI & agents': [{ title: 'MCP Server', href: '/documentation/mcp' }],
+};
 
 export const tagBySlug = (slug: string) => API_TAGS.find((t) => t.slug === slug);
 
@@ -56,10 +63,12 @@ export function getDocsNav(): NavGroup[] {
     },
   ];
 
-  const order = ['Core', 'Reconciliation', 'Settlement', 'Real-time & automation', 'Authentication', 'Platform'];
+  const order = ['Core', 'Reconciliation', 'Settlement', 'Real-time & automation', 'Authentication', 'AI & agents'];
   for (const group of order) {
-    const items = API_TAGS.filter((t) => t.group === group)
-      .map((t) => ({ title: t.title, href: `/documentation/api-reference/${t.slug}` }));
+    const items: NavItem[] = [
+      ...(GUIDE_EXTRAS[group] ?? []),
+      ...API_TAGS.filter((t) => t.group === group).map((t) => ({ title: t.title, href: `/documentation/api-reference/${t.slug}` })),
+    ];
     if (items.length) groups.push({ title: group, items });
   }
   return groups;

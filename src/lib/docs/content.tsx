@@ -83,7 +83,14 @@ export const SECTION_CONTENT: Record<string, SectionContent> = {
     ],
   },
 
-  insights: { intro: <>Aggregate analytics for your account: collection rate, outstanding deficit, and a reconciliation + risk breakdown.</> },
+  insights: {
+    intro: <>Collections analytics for your account. Beyond the headline collection rate, outstanding deficit, and reconciliation + risk breakdown, <strong>Collections Intelligence</strong> adds receivables <strong>aging</strong>, a cash-flow <strong>forecast</strong>, and per-customer collection <strong>scores</strong>.</>,
+    notes: {
+      'GET /api/v1/insights/aging': 'Outstanding receivables bucketed by how long they have been outstanding (0–7 / 8–30 / 31–60 / 60+ days).',
+      'GET /api/v1/insights/forecast': 'Expected inflows over the next N days (7–180): scheduled billing due bucketed by week, plus a projection from your trailing 30-day collection run-rate.',
+      'GET /api/v1/insights/customers': 'Per-customer collection reliability scored 0–100 (Excellent / Good / Fair / Poor), worst-outstanding first.',
+    },
+  },
 
   'settlement-settings': {
     intro: <>Configure where collected funds are swept and when. When auto-settle is on and a bank account is set, fully-paid accounts are settled automatically.</>,
@@ -162,8 +169,31 @@ export const SECTION_CONTENT: Record<string, SectionContent> = {
     ],
   },
 
+  'payment-flows': {
+    intro: <>Programmable, multi-step automation on reconciled deposits — the evolution of Money Rules. A flow is a <strong>trigger</strong> (deposit / overpaid / underpaid / fully-paid / high-risk) plus optional conditions (min amount, min risk) that runs an <strong>ordered list of actions</strong> (hold → release → notify → flag). Every run is recorded so you can audit exactly what fired and why.</>,
+    notes: {
+      'POST /api/v1/flows': 'Creates a flow. actions is an ordered array run top-to-bottom; priority orders flows against each other. minAmountKobo and minRiskScore are optional gates.',
+      'GET /api/v1/flows/runs': 'The audit trail — one row per flow that fired for a deposit, with a human-readable outcome per action.',
+    },
+    quirks: [
+      { variant: 'note', title: 'Runs after reconciliation commits', body: <>Like Money Rules, flows execute post-commit and fully isolated — a flow can never change how a deposit was classified, and a failing action never aborts the others or the reconciliation.</> },
+      { variant: 'note', title: 'Actions are idempotent', body: <>Each action reuses an existing primitive (Hold → escrow, Release → escrow release, Notify/Flag → webhook event) and is safe to re-run — e.g. Hold is a no-op if the account is already held.</> },
+      { variant: 'tip', title: 'Build them in the dashboard', body: <>Flows have a no-code builder under <strong>Flows</strong> in the dashboard; this API is the same surface for programmatic management.</> },
+    ],
+  },
+
+  copilot: {
+    intro: <>A grounded, natural-language assistant over your <strong>live</strong> account data. Ask about your collection rate, outstanding receivables, cash-flow forecast, at-risk customers, or automation, and it answers from real figures — it never invents numbers. Available as a chat widget across the dashboard and via this endpoint.</>,
+    notes: {
+      'POST /api/v1/copilot/ask': 'Send a natural-language prompt; returns a reply, follow-up suggestions, and deep-link actions to the relevant dashboard pages, plus the structured data behind the answer.',
+    },
+    quirks: [
+      { variant: 'note', title: 'Grounded and deterministic', body: <>The Copilot routes your question to a real data source (insights, aging, forecast, customer scores, flows) and answers only from that — the same question yields the same figures. It is tenant-scoped and never exposes another account&apos;s data.</> },
+    ],
+  },
+
   'agent-discovery': {
-    intro: <>A compact, machine-readable capability map at <C>/.well-known/llms.txt</C> so a developer can point an AI agent at Xental and have it wire the integration.</>,
+    intro: <>A compact, machine-readable capability map at <C>/.well-known/llms.txt</C> so a developer can point an AI agent at Xental and have it wire the integration. For a turnkey option, see the <a href='/documentation/mcp'>MCP Server</a>.</>,
   },
 };
 
