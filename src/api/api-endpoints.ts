@@ -97,6 +97,9 @@ export const API_ENDPOINTS = {
     FORECAST: '/insights/forecast',
     CUSTOMERS: '/insights/customers',
   },
+  COPILOT: {
+    ASK: '/copilot/ask',
+  },
   ADMIN: {
     LOGIN: '/admin/auth/login',
     LOGIN_VERIFY: '/admin/auth/login/verify',
