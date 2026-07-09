@@ -19,6 +19,12 @@ export default function McpPage() {
         accounts, watch reconciled transactions, run payouts, and drive the sandbox, all in natural language. Instead of an
         agent scraping the dashboard, it talks to Xental over the same public API you use.
       </p>
+      <p>
+        The server is open-source:{' '}
+        <a href='https://github.com/XENTAL-PayLibre/xental-mcp' target='_blank' rel='noreferrer'>
+          github.com/XENTAL-PayLibre/xental-mcp
+        </a>.
+      </p>
 
       <h2>Tools</h2>
       <ul>
@@ -34,10 +40,11 @@ export default function McpPage() {
       <p>All money is integer <strong>kobo</strong> (₦1 = 100 kobo). Money-moving calls are idempotent on a caller-supplied reference.</p>
 
       <h2>Install</h2>
-      <p>The server lives in the Xental repo under <code>clients/xental-mcp</code>. Build it once:</p>
+      <p>Clone the public repo and build it once:</p>
       <CodeBlock
         language='bash'
-        code={`cd clients/xental-mcp
+        code={`git clone https://github.com/XENTAL-PayLibre/xental-mcp.git
+cd xental-mcp
 npm install
 npm run build`}
       />
@@ -55,7 +62,7 @@ npm run build`}
   "mcpServers": {
     "xental": {
       "command": "node",
-      "args": ["/absolute/path/to/clients/xental-mcp/build/index.js"],
+      "args": ["/absolute/path/to/xental-mcp/build/index.js"],
       "env": {
         "XENTAL_API_BASE": "${DOCS_API_BASE}",
         "XENTAL_CLIENT_ID": "your-client-id",
