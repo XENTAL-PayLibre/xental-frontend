@@ -52,9 +52,6 @@ export default function PayInsPage() {
           <h1 className='text-xl font-bold text-foreground'>Pay-ins</h1>
           <p className='text-sm text-xental-text-primary-400 mt-0.5'>Track all incoming payments</p>
         </div>
-        <Button size='sm' variant='outline' className='gap-1.5' onClick={() => toast.info('Export coming soon')}>
-          <Download className='w-3.5 h-3.5' /> Export
-        </Button>
       </div>
 
       <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>

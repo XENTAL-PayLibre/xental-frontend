@@ -225,12 +225,6 @@ export function CustomerDetailView({ accountRef }: { accountRef: string }) {
                     value={statusFilter}
                     onChange={setStatusFilter}
                   />
-                  <Button
-                    size='sm'
-                    className='gap-1.5 px-4 h-8 bg-action-blue hover:bg-action-blue/90'
-                  >
-                    <Download className='w-3.5 h-3.5' /> Export
-                  </Button>
                 </div>
               </div>
 
