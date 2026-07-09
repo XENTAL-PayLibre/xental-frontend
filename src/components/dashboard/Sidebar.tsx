@@ -11,6 +11,7 @@ import {
   ArrowUpRight,
   RefreshCw,
   Store,
+  Zap,
   Settings,
   X,
   LogOut,
@@ -28,6 +29,7 @@ const NAV_ITEMS = [
   { label: 'Pay-ins', href: '/dashboard/pay-ins', icon: ArrowDownLeft },
   { label: 'Pay-outs', href: '/dashboard/pay-outs', icon: ArrowUpRight },
   { label: 'Billing', href: '/dashboard/billing', icon: RefreshCw },
+  { label: 'Flows', href: '/dashboard/flows', icon: Zap },
   { label: 'Sub-merchants', href: '/dashboard/sub-merchants', icon: Store },
   { label: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
