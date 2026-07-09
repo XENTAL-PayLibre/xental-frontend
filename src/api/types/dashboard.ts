@@ -278,3 +278,26 @@ export type RuleResponse = {
   enabled: boolean;
   priority: number;
 };
+
+export type FlowResponse = {
+  id: string;
+  name: string;
+  trigger: string;
+  actions: string[];
+  minAmountKobo: number | null;
+  minRiskScore: number | null;
+  enabled: boolean;
+  priority: number;
+  createdAtUtc: string;
+};
+
+export type FlowRunResponse = {
+  id: string;
+  flowId: string;
+  flowName: string;
+  trigger: string;
+  accountRef: string | null;
+  transactionRef: string | null;
+  outcome: string;
+  createdAtUtc: string;
+};
