@@ -23,14 +23,6 @@ export default function DashboardHome() {
               : 'Welcome back'}
           </p>
         </div>
-        <Button
-          size='sm'
-          className='gap-1.5'
-          onClick={() => toast.info('Export coming soon')}
-        >
-          <Download className='w-3.5 h-3.5' />
-          Export
-        </Button>
       </div>
 
       <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
