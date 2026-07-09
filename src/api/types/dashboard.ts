@@ -16,6 +16,43 @@ export type InsightsResponse = {
   partiallyPaidAccounts: number;
 };
 
+export type AgingBucketResponse = {
+  label: string;
+  accounts: number;
+  outstandingKobo: number;
+};
+export type AgingReportResponse = {
+  totalOutstandingKobo: number;
+  buckets: AgingBucketResponse[];
+};
+
+export type ForecastWeekResponse = {
+  weekStartUtc: string;
+  scheduledKobo: number;
+};
+export type CashFlowForecastResponse = {
+  days: number;
+  scheduledDueKobo: number;
+  dailyRunRateKobo: number;
+  runRateProjectedKobo: number;
+  projectedTotalKobo: number;
+  weeks: ForecastWeekResponse[];
+};
+
+export type CustomerScoreResponse = {
+  customerRef: string;
+  customerName: string;
+  expectedKobo: number;
+  paidKobo: number;
+  outstandingKobo: number;
+  collectionRatePct: number;
+  deposits: number;
+  duePeriods: number;
+  latePeriods: number;
+  score: number;
+  rating: string;
+};
+
 export type TransactionSummaryResponse = {
   total: number;
   totalPayinsKobo: number;

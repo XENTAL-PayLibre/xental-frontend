@@ -93,6 +93,9 @@ export const API_ENDPOINTS = {
   },
   ACCOUNT_INSIGHTS: {
     BASE: '/insights',
+    AGING: '/insights/aging',
+    FORECAST: '/insights/forecast',
+    CUSTOMERS: '/insights/customers',
   },
   ADMIN: {
     LOGIN: '/admin/auth/login',
